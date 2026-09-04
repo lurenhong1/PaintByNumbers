@@ -5,6 +5,7 @@ function App() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [inputImage, setInputImage] = useState<string|null>(null);
   const [outputImage, setOutputImage] = useState<string|null>(null);
+  const [processing, setProcessing] = useState<boolean>(false);
   const [imageFile, setImageFile] = useState<File|null>(null);
   const [emptyImage, setEmptyImage] = useState<boolean>(false);
 
@@ -28,6 +29,7 @@ function App() {
     }
 
     setEmptyImage(false);
+    setProcessing(true);
 
     const formData = new FormData();
     formData.append("image", imageFile);
@@ -42,14 +44,19 @@ function App() {
       );
 
       if (!response.ok) {
-        throw new Error(`Upload failed with status ${response.status}`);
+        const errorBody = await response.json()
+        throw new Error(
+            errorBody.detail ?? `Upload failed with status ${response.status}`,
+        )
       }
 
       const result = await response.blob();
       console.log("Response: ", result);
+      setProcessing(false);
       setOutputImage(URL.createObjectURL(result))
     } catch (error) {
       console.error("Failed to upload image: ", error);
+      setProcessing(false);
     }
   }
 
@@ -70,6 +77,7 @@ function App() {
           Upload
         </button>
         {emptyImage && (<p>Please select an image before upload.</p>)}
+        {processing && (<p>Image processing, please wait.</p>)}
         {outputImage && (
             <img
                 src={outputImage}

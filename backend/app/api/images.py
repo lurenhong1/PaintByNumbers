@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, UploadFile
 from fastapi.responses import Response
-from app.services.image_processor import convert_to_png
+from app.services.image_processor import convert_to_png, reduce_colors
 
 router = APIRouter(
     prefix="/images",
@@ -18,7 +18,7 @@ async def process_image(image: UploadFile):
         )
 
     try:
-        png_bytes = convert_to_png(image_bytes)
+        png_bytes = reduce_colors(image_bytes, color_count=20, smooth_median=9, merge_area=800)
     except ValueError as error:
         raise HTTPException(
             status_code=400,
