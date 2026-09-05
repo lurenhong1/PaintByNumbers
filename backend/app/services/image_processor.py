@@ -5,7 +5,7 @@ without starting a web server.
 """
 from io import BytesIO
 
-from PIL import Image, ImageOps, UnidentifiedImageError, ImageFilter
+from PIL import Image, ImageOps, UnidentifiedImageError, ImageFilter, ImageDraw
 
 import numpy as np
 
@@ -29,8 +29,29 @@ def convert_to_png(image_bytes: bytes) -> bytes:
     except (UnidentifiedImageError, OSError) as error:
         raise ValueError("The uploaded file is not a valid image") from error
 
+def process(image_bytes: bytes, color_count: int = 12, smooth_median: int = 7, merge_area = 200) -> tuple[bytes, bytes, list[tuple[int, tuple[int, int, int]]]]:
+    reduced_image = reduce_colors(image_bytes, color_count, smooth_median, merge_area)
+    color_keys, locations = locate_numbers(reduced_image)
 
-def reduce_colors(image_bytes: bytes, color_count: int = 12, smooth_median: int = 7, merge_area = 200) -> bytes:
+    boundary = find_boundary(reduced_image)
+
+    height, width = boundary.shape
+    outlined_array = np.full((height, width, 3), 255, dtype=np.uint8)
+
+    outlined_array[boundary] = (0, 0, 0)
+
+    outlined_image = Image.fromarray(outlined_array)
+
+    numbered_image = draw_numbers(outlined_image, locations)
+
+    numbered_buffer = BytesIO()
+    numbered_image.save(numbered_buffer, format="PNG")
+    expected_buffer = BytesIO()
+    reduced_image.save(expected_buffer, format="PNG")
+
+    return numbered_buffer.getvalue(), expected_buffer.getvalue(), color_keys
+
+def reduce_colors(image_bytes: bytes, color_count: int = 12, smooth_median: int = 7, merge_area = 200) -> Image.Image:
     if not (2 <= color_count <= 32 and smooth_median % 2 == 1):
         raise ValueError("color_count must be between 2 and 32")
     try:
@@ -66,53 +87,19 @@ def reduce_colors(image_bytes: bytes, color_count: int = 12, smooth_median: int 
                 min_area=merge_area,
             )
 
-            boundary = find_boundary(cleaned_image)
-
-            output_array = np.array(
-                cleaned_image.convert("RGB")
-            )
-
-            output_array[boundary] = (0, 0, 0)
-
-            output_image = Image.fromarray(output_array)
-
-            # output_image = quantized_image.convert("RGB")
-
-            output_buffer = BytesIO()
-            output_image.save(output_buffer, format="PNG")
-
-            return output_buffer.getvalue()
+            return cleaned_image
 
     except (UnidentifiedImageError, OSError) as error:
         raise ValueError("The uploaded file is not a valid image") from error
 
-
-def find_boundary(quantized_image: Image.Image) -> np.ndarray:
-    color_labels = np.asarray(quantized_image)
-    boundaries = np.zeros(color_labels.shape, dtype=bool)
-
-    vertical_changes = (
-            color_labels[:, 1:] != color_labels[:, :-1]
-    )
-    boundaries[:, 1:] |= vertical_changes
-    boundaries[:, :-1] |= vertical_changes
-
-    horizontal_changes = (
-            color_labels[1:, :] != color_labels[:-1, :]
-    )
-    boundaries[1:, :] |= horizontal_changes
-    boundaries[:-1, :] |= horizontal_changes
-
-    return boundaries
-
-def merge_small_regions(quantized_image: Image.Image, min_area: int = 200, max_passes: int = 3) -> Image.Image:
-    if quantized_image.mode != "P":
+def merge_small_regions(image: Image.Image, min_area: int = 200, max_passes: int = 3) -> Image.Image:
+    if image.mode != "P":
         raise ValueError("quantized_image must be a palette image")
 
     if min_area < 1:
         raise ValueError("min_area must be at least 1")
 
-    labels = np.asarray(quantized_image).copy()
+    labels = np.asarray(image).copy()
 
     # Only treat pixels sharing an edge as neighbors.
     neighbor_kernel = np.array(
@@ -189,9 +176,69 @@ def merge_small_regions(quantized_image: Image.Image, min_area: int = 200, max_p
         mode="P",
     )
 
-    palette = quantized_image.getpalette()
+    palette = image.getpalette()
 
     if palette is not None:
         cleaned_image.putpalette(palette)
 
     return cleaned_image
+
+def find_boundary(image: Image.Image) -> np.ndarray:
+    if image.mode != "P":
+        raise ValueError("quantized_image must be a palette image")
+
+    color_labels = np.asarray(image)
+    boundaries = np.zeros(color_labels.shape, dtype=bool)
+
+    vertical_changes = (
+            color_labels[:, 1:] != color_labels[:, :-1]
+    )
+    boundaries[:, 1:] |= vertical_changes
+    boundaries[:, :-1] |= vertical_changes
+
+    horizontal_changes = (
+            color_labels[1:, :] != color_labels[:-1, :]
+    )
+    boundaries[1:, :] |= horizontal_changes
+    boundaries[:-1, :] |= horizontal_changes
+
+    return boundaries
+
+def draw_numbers(image: Image.Image, locations: list[tuple[float, float, int]]) -> Image.Image:
+
+    numbered_image = image.copy()
+
+    draw = ImageDraw.Draw(numbered_image)
+
+    for x, y, number in locations:
+        draw.text((x, y), str(number), fill=(0, 0, 0), anchor="mm")
+
+    return numbered_image
+
+def locate_numbers(image: Image.Image) -> tuple[list[tuple[int, tuple[int, int, int]]], list[tuple[float, float, int]]]:
+    if image.mode != "P":
+        raise ValueError("quantized_image must be a palette image")
+
+    labels = np.asarray(image).copy()
+    color_keys, locations = [], []
+    palette = image.getpalette()
+
+    if palette is None:
+        raise ValueError("quantized_image does not contain a color palette")
+
+    for color_number, color_label in enumerate(np.unique(labels), start=1):
+        palette_index = int(color_label) * 3
+        rgb = tuple(palette[palette_index:palette_index + 3])
+        color_keys.append((color_number, rgb))
+
+        color_mask = (labels == color_label).astype(np.uint8)
+
+        component_count, component_ids, component_stats, component_centroids = (
+            cv2.connectedComponentsWithStats(color_mask, connectivity=4)
+        )
+
+        for component in range(1, component_count):
+            x, y = component_centroids[component]
+            locations.append((float(x), float(y), color_number))
+
+    return color_keys, locations
