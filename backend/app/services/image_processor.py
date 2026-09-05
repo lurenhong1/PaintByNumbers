@@ -11,23 +11,23 @@ import numpy as np
 
 import cv2
 
+from typing import cast
 
-
-def convert_to_png(image_bytes: bytes) -> bytes:
-    try:
-        with Image.open(BytesIO(image_bytes)) as image:
-            image.load()
-
-            normalized_image = ImageOps.exif_transpose(image)
-            normalized_image = normalized_image.convert("RGB")
-
-            output_buffer = BytesIO()
-            normalized_image.save(output_buffer, format="PNG")
-
-            return output_buffer.getvalue()
-
-    except (UnidentifiedImageError, OSError) as error:
-        raise ValueError("The uploaded file is not a valid image") from error
+# def convert_to_png(image_bytes: bytes) -> bytes:
+#     try:
+#         with Image.open(BytesIO(image_bytes)) as image:
+#             image.load()
+#
+#             normalized_image = ImageOps.exif_transpose(image)
+#             normalized_image = normalized_image.convert("RGB")
+#
+#             output_buffer = BytesIO()
+#             normalized_image.save(output_buffer, format="PNG")
+#
+#             return output_buffer.getvalue()
+#
+#     except (UnidentifiedImageError, OSError) as error:
+#         raise ValueError("The uploaded file is not a valid image") from error
 
 def process(image_bytes: bytes, color_count: int = 12, smooth_median: int = 7, merge_area = 200) -> tuple[bytes, bytes, list[tuple[int, tuple[int, int, int]]]]:
     reduced_image = reduce_colors(image_bytes, color_count, smooth_median, merge_area)
@@ -238,7 +238,33 @@ def locate_numbers(image: Image.Image) -> tuple[list[tuple[int, tuple[int, int, 
         )
 
         for component in range(1, component_count):
-            x, y = component_centroids[component]
+            left = int(component_stats[component, cv2.CC_STAT_LEFT])
+            top = int(component_stats[component, cv2.CC_STAT_TOP])
+            width = int(component_stats[component, cv2.CC_STAT_WIDTH])
+            height = int(component_stats[component, cv2.CC_STAT_HEIGHT])
+
+            component_mask = (
+                    component_ids[
+                        top:top + height,
+                        left:left + width,
+                    ] == component
+            ).astype(np.uint8)
+
+            padded_mask = np.pad(
+                component_mask,
+                pad_width=((1, 1), (1, 1)),
+                mode="constant",
+                constant_values=0,
+            ).astype(np.uint8, copy=False)
+
+            distance_map = cv2.distanceTransform(padded_mask, cv2.DIST_L2, 5)
+
+            _, _, _, maximum_location = cv2.minMaxLoc(distance_map)
+            padded_x, padded_y = maximum_location
+
+            x = left + padded_x - 1
+            y = top + padded_y - 1
+
             locations.append((float(x), float(y), color_number))
 
     return color_keys, locations
