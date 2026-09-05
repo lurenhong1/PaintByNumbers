@@ -2,10 +2,20 @@ import { useRef, useState, type ChangeEvent } from 'react'
 import './App.css'
 
 function App() {
+  type RGB = [number, number, number];
+  type ColorKey = [number, RGB];
+
+  type ProcessImageResponse = {
+    numberedImage: string;
+    expectedImage: string;
+    colorKeys: ColorKey[];
+  };
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [inputImage, setInputImage] = useState<string|null>(null);
   const [numberedImage, setNumberedImage] = useState<string|null>(null);
   const [expectedImage, setExpectedImage] = useState<string|null>(null);
+  const [colorKeys, setColorKeys] = useState<ColorKey[]>([]);
   const [processing, setProcessing] = useState<boolean>(false);
   const [imageFile, setImageFile] = useState<File|null>(null);
   const [emptyImage, setEmptyImage] = useState<boolean>(false);
@@ -51,11 +61,13 @@ function App() {
         )
       }
 
-      const result = await response.json();
+      const result: ProcessImageResponse = await response.json();
       console.log("Response: ", result);
       setProcessing(false);
+
       setNumberedImage(`data:image/png;base64,${result.numberedImage}`);
       setExpectedImage(`data:image/png;base64,${result.expectedImage}`);
+      setColorKeys(result.colorKeys);
     } catch (error) {
       console.error("Failed to upload image: ", error);
       setProcessing(false);
@@ -94,6 +106,24 @@ function App() {
                 className="image-preview"
             />
         )}
+        {colorKeys &&
+            <div>{colorKeys.map(([number, [red, green, blue]]) =>(
+                <div key={number}>
+                  <p key={number}>{number}</p>
+
+                  <span style={{
+                      display: "inline-block",
+                      width: "24px",
+                      height: "24px",
+                      backgroundColor: `rgb(${red}, ${green}, ${blue})`,
+                    }}
+                  />
+                </div>
+                ))
+            }
+            </div>
+        }
+
       </section>
       <input
           ref={fileInputRef}

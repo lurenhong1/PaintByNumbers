@@ -5,7 +5,7 @@ without starting a web server.
 """
 from io import BytesIO
 
-from PIL import Image, ImageOps, UnidentifiedImageError, ImageFilter, ImageDraw
+from PIL import Image, ImageOps, UnidentifiedImageError, ImageFilter, ImageDraw, ImageFont
 
 import numpy as np
 
@@ -29,8 +29,8 @@ from typing import cast
 #     except (UnidentifiedImageError, OSError) as error:
 #         raise ValueError("The uploaded file is not a valid image") from error
 
-def process(image_bytes: bytes, color_count: int = 12, smooth_median: int = 7, merge_area = 200) -> tuple[bytes, bytes, list[tuple[int, tuple[int, int, int]]]]:
-    reduced_image = reduce_colors(image_bytes, color_count, smooth_median, merge_area)
+def process(image_bytes: bytes, color_count: int = 12, median_filter_size: int = 7, merge_area = 200) -> tuple[bytes, bytes, list[tuple[int, tuple[int, int, int]]]]:
+    reduced_image = reduce_colors(image_bytes, color_count, median_filter_size, merge_area)
     color_keys, locations = locate_numbers(reduced_image)
 
     boundary = find_boundary(reduced_image)
@@ -51,9 +51,9 @@ def process(image_bytes: bytes, color_count: int = 12, smooth_median: int = 7, m
 
     return numbered_buffer.getvalue(), expected_buffer.getvalue(), color_keys
 
-def reduce_colors(image_bytes: bytes, color_count: int = 12, smooth_median: int = 7, merge_area = 200) -> Image.Image:
-    if not (2 <= color_count <= 32 and smooth_median % 2 == 1):
-        raise ValueError("color_count must be between 2 and 32")
+def reduce_colors(image_bytes: bytes, color_count: int = 12, median_filter_size: int = 7, merge_area = 200) -> Image.Image:
+    if not (2 <= color_count <= 50 and median_filter_size % 2 == 1):
+        raise ValueError("color_count must be between 2 and 50")
     try:
         with Image.open(BytesIO(image_bytes)) as image:
             image.load()
@@ -73,7 +73,7 @@ def reduce_colors(image_bytes: bytes, color_count: int = 12, smooth_median: int 
                 rgba_image,
             ).convert("RGB")
 
-            smoothed_image = normalized_image.filter(ImageFilter.MedianFilter(size=smooth_median))
+            smoothed_image = normalized_image.filter(ImageFilter.MedianFilter(size=median_filter_size))
 
             quantized_image = smoothed_image.quantize(
                 colors=color_count,
@@ -210,8 +210,10 @@ def draw_numbers(image: Image.Image, locations: list[tuple[float, float, int]]) 
 
     draw = ImageDraw.Draw(numbered_image)
 
+    font = ImageFont.load_default(size=7)
+
     for x, y, number in locations:
-        draw.text((x, y), str(number), fill=(0, 0, 0), anchor="mm")
+        draw.text((x, y), str(number), fill=(0, 0, 0), font=font, anchor="mm")
 
     return numbered_image
 

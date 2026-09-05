@@ -18,7 +18,7 @@ async def process_image(image: UploadFile):
         )
 
     try:
-        numbered_bytes, expected_bytes, color_keys = process(image_bytes, color_count=20, smooth_median=9, merge_area=800)
+        numbered_bytes, expected_bytes, color_keys = process(image_bytes, color_count=32, median_filter_size=3, merge_area=200)
         return {
             "numberedImage": base64.b64encode(numbered_bytes).decode("ascii"),
             "expectedImage": base64.b64encode(expected_bytes).decode("ascii"),
