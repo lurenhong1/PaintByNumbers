@@ -33,7 +33,7 @@ function App() {
     setInputImage(URL.createObjectURL(selectedImage))
   }
 
-  async function handleUpdate(): Promise<void> {
+  async function handleGenerate(): Promise<void> {
     if (!imageFile) {
       setEmptyImage(true);
       return;
@@ -77,61 +77,92 @@ function App() {
   return (
     <>
       <section id="main">
-        <button id="addImageBtn" onClick={() => fileInputRef.current?.click()}>
-          Add Image
-        </button>
-        {inputImage && (
-            <img
-                src={inputImage}
-                alt="Input image preview"
-                className="image-preview"
-            />
-        )}
-        <button id="uploadImageBtn" onClick={handleUpdate}>
-          Upload
-        </button>
+        <div id="toolbar">
+          <button className="btn" onClick={() => fileInputRef.current?.click()}>
+            Upload Image
+          </button>
+          <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              onChange={handleImageChange}
+              hidden
+          />
+
+          <button className="btn" onClick={handleGenerate}>
+            Generate
+          </button>
+
+          <button className="btn">
+            Download Referenced
+          </button>
+
+          <button className="btn">
+            Download Template
+          </button>
+
+          <button className="btn">
+            Download Color Sets
+          </button>
+
+          <button className="btn">
+            Download All
+          </button>
+
+        </div>
+        <div id="imageDisplayWindow">
+          <div id="leftImageDisplay">
+            {inputImage && (
+                <img
+                    src={inputImage}
+                    alt="Input image preview"
+                    className="image"
+                />
+            )}
+          </div>
+          <div id="rightImageDisplay">
+            {expectedImage && (
+                <img
+                    src={expectedImage}
+                    alt="Input image preview"
+                    className="image"
+                />
+            )}
+
+            {numberedImage && (
+                <img
+                    src={numberedImage}
+                    alt="Input image preview"
+                    className="image"
+                />
+            )}
+
+            {colorKeys &&
+                <div id="colorSets">
+                  {colorKeys.map(([number, [red, green, blue]]) =>(
+                      <div className="colorInfo" key={number}>
+                        <p className="colorNumber">{number}</p>
+                        <span style={{
+                          display: "inline-block",
+                          width: "24px",
+                          height: "24px",
+                          backgroundColor: `rgb(${red}, ${green}, ${blue})`,
+                        }}
+                        />
+                        <p className="colorFormation">color can be formed by</p>
+                      </div>
+                  ))
+                  }
+                </div>
+            }
+          </div>
+        </div>
         {emptyImage && (<p>Please select an image before upload.</p>)}
         {processing && (<p>Image processing, please wait.</p>)}
-        {numberedImage && (
-            <img
-                src={numberedImage}
-                alt="Input image preview"
-                className="image-preview"
-            />
-        )}
-        {expectedImage && (
-            <img
-                src={expectedImage}
-                alt="Input image preview"
-                className="image-preview"
-            />
-        )}
-        {colorKeys &&
-            <div>{colorKeys.map(([number, [red, green, blue]]) =>(
-                <div key={number}>
-                  <p key={number}>{number}</p>
 
-                  <span style={{
-                      display: "inline-block",
-                      width: "24px",
-                      height: "24px",
-                      backgroundColor: `rgb(${red}, ${green}, ${blue})`,
-                    }}
-                  />
-                </div>
-                ))
-            }
-            </div>
-        }
+
 
       </section>
-      <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/png,image/jpeg,image/webp"
-          onChange={handleImageChange}
-          hidden
-      />
 
     </>
   )
