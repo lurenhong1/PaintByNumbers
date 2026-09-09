@@ -51,7 +51,7 @@
 #colorSets {
   width: 100%;
   display: grid;
-  grid-template-columns: max-content 24px minmax(0, 1fr);
+  grid-template-columns: max-content 24px minmax(0, 1fr) 24px;
   align-items: center;
   column-gap: 12px;
   row-gap: 8px;

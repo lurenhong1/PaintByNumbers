@@ -1,5 +1,8 @@
 from fastapi import APIRouter, HTTPException, UploadFile
 import base64
+
+from app.models.schemas import ColorRecipeRequest
+from app.services.color_mixer import estimate_paint_mix
 from app.services.image_processor import process
 
 router = APIRouter(
@@ -29,5 +32,19 @@ async def process_image(image: UploadFile):
             status_code=400,
             detail=str(error),
         ) from error
+
+
+@router.post("/recipes")
+def create_color_recipes(request: ColorRecipeRequest):
+    """Add an estimated RYBKW paint recipe to each numbered palette color."""
+    try:
+        color_keys = [
+            (number, rgb, estimate_paint_mix(rgb))
+            for number, rgb in request.colorKeys
+        ]
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+
+    return {"colorKeys": color_keys}
 
 
