@@ -52,21 +52,42 @@ def estimate_paint_mix(target_rgb: tuple[int, int, int]) -> dict[str, object]:
         # Squared Delta-E 76 distance.
         return float(difference @ difference)
 
-    result = minimize(
-        loss,
-        x0=np.full(5, 0.2),
-        method="SLSQP",
-        bounds=[(0.0, 1.0)] * 5,
-        constraints={
-            "type": "eq",
-            "fun": lambda weights: weights.sum() - 1.0,
-        },
-        options={
-            "maxiter": 200,
-            "ftol": 1e-8,
-            "eps": 1e-3,
-        },
-    )
+    constraint = {
+        "type": "eq",
+        "fun": lambda weights: weights.sum() - 1.0,
+    }
+
+    rng = np.random.default_rng(42)
+
+    starting_points = [
+        np.full(5, 0.2),
+        *np.eye(5),
+        *rng.dirichlet(np.ones(5), size=20),
+    ]
+
+    results = []
+
+    for x0 in starting_points:
+        candidate = minimize(
+            loss,
+            x0=x0,
+            method="SLSQP",
+            bounds=[(0.0, 1.0)] * 5,
+            constraints=constraint,
+            options={
+                "maxiter": 500,
+                "ftol": 1e-8,
+                "eps": 1e-3,
+            },
+        )
+
+        if candidate.success and np.isfinite(candidate.fun):
+            results.append(candidate)
+
+    if not results:
+        raise ValueError("Could not find a valid paint mixture")
+
+    result = min(results, key=lambda candidate: candidate.fun)
 
     weights = np.clip(result.x, 0.0, 1.0)
     weights /= weights.sum()
