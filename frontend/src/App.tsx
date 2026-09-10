@@ -37,6 +37,16 @@ function App() {
   const [imageFile, setImageFile] = useState<File|null>(null);
   const [emptyImage, setEmptyImage] = useState<boolean>(false);
 
+  const minColorCount = 2;
+  const maxColorCount = 50;
+  const [colorCount, setColorCount] = useState<number>(20);
+  const minFilterSize = 3;
+  const maxFilterSize = 11;
+  const [medianFilterSize, setMedianFilterSize] = useState<number>(7);
+  const minMergeArea = 100;
+  const maxMergeArea = 900;
+  const [mergeArea, setMergeArea] = useState<number>(500);
+
   function formatPaintMix(ratios: PaintRatios): string {
     return Object.entries(ratios)
         .filter(([, percentage]) => percentage > 0)
@@ -80,6 +90,9 @@ function App() {
 
     const formData = new FormData();
     formData.append("image", imageFile);
+    formData.append("colorCount", String(colorCount));
+    formData.append("medianFilterSize", String(medianFilterSize));
+    formData.append("mergeArea", String(mergeArea))
 
     try {
       const response = await fetch(
@@ -201,11 +214,63 @@ function App() {
         <div id="imageDisplayWindow">
           <div id="leftImageDisplay">
             {inputImage && (
-                <img
-                    src={inputImage}
-                    alt="Input image preview"
-                    className="image"
-                />
+                <div>
+                  <img
+                      src={inputImage}
+                      alt="Input image preview"
+                      className="image"
+                  />
+                  <div id="sliderControl">
+                    <label>Color Count: {colorCount}</label>
+                    <div className="slider">
+                      <p>{minColorCount}</p>
+                      <input
+                          type="range"
+                          min={minColorCount}
+                          max={maxColorCount}
+                          step={1}
+                          value={colorCount}
+                          disabled={processing}
+                          title="Controls amount of color present."
+                          onChange={(e) => setColorCount(e.currentTarget.valueAsNumber)}
+                      />
+                      <p>{maxColorCount}</p>
+                    </div>
+
+                    <label>Filter Size: {medianFilterSize}</label>
+                    <div className="slider">
+                      <p>{minFilterSize}</p>
+                      <input
+                          type="range"
+                          min={minFilterSize}
+                          max={maxFilterSize}
+                          step={2}
+                          value={medianFilterSize}
+                          disabled={processing}
+                          title="Controls image smoothness."
+                          onChange={(e) => setMedianFilterSize(e.currentTarget.valueAsNumber)}
+                      />
+                      <p>{maxFilterSize}</p>
+                    </div>
+
+                    <label>Merge Area: {mergeArea}</label>
+                    <div className="slider">
+                      <p>{minMergeArea}</p>
+                      <input
+                          type="range"
+                          min={minMergeArea}
+                          max={maxMergeArea}
+                          step={100}
+                          value={mergeArea}
+                          disabled={processing}
+                          title="Controls image detail."
+                          onChange={(e) => setMergeArea(e.currentTarget.valueAsNumber)}
+                      />
+                      <p>{maxMergeArea}</p>
+                    </div>
+                  </div>
+
+                </div>
             )}
           </div>
           <div id="rightImageDisplay">

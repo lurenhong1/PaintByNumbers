@@ -1,9 +1,11 @@
-from fastapi import APIRouter, HTTPException, UploadFile
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form
 import base64
 
 from app.models.schemas import ColorRecipeRequest
 from app.services.color_mixer import estimate_paint_mix
 from app.services.image_processor import process
+
+from typing import Annotated
 
 router = APIRouter(
     prefix="/images",
@@ -11,7 +13,12 @@ router = APIRouter(
 )
 
 @router.post("/process")
-async def process_image(image: UploadFile):
+async def process_image(
+        image: Annotated[UploadFile, File()],
+        color_count: Annotated[int, Form(alias="colorCount")],
+        median_filter_size: Annotated[int, Form(alias="medianFilterSize")],
+        merge_area: Annotated[int, Form(alias="mergeArea")]
+):
     image_bytes = await image.read()
 
     if not image_bytes:
@@ -21,7 +28,10 @@ async def process_image(image: UploadFile):
         )
 
     try:
-        numbered_bytes, expected_bytes, color_keys = process(image_bytes, color_count=32, median_filter_size=3, merge_area=200)
+        numbered_bytes, expected_bytes, color_keys = process(image_bytes,
+                                                             color_count=color_count,
+                                                             median_filter_size=median_filter_size,
+                                                             merge_area=merge_area)
         return {
             "numberedImage": base64.b64encode(numbered_bytes).decode("ascii"),
             "expectedImage": base64.b64encode(expected_bytes).decode("ascii"),

@@ -12,8 +12,9 @@
   align-items: center;
   gap: 5px;
   padding: 10px;
-  background-color: white;
-  border: 1px black;
+  background-color: #dfdfdf;
+  margin-bottom: 2px;
+  border-radius: 10px;
 }
 
 #imageDisplayWindow {
@@ -22,15 +23,22 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   padding-top: 10px;
-  background-color: #6b6375;
+  background-color: #dfdfdf;
+  border-radius: 10px;
 }
 
 #leftImageDisplay {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  margin-left: 10px;
-  margin-right: 5px;
+  padding-left: 10px;
+  padding-right: 10px;
+  border-right: solid 1px black;
+}
+
+#parameterBar {
+  width: 100%;
+  min-width: 100px;
 }
 
 #rightImageDisplay {
@@ -38,8 +46,8 @@
   flex-direction: column;
   overflow: auto;
   gap: 10px;
-  margin-left: 5px;
-  margin-right: 10px;
+  padding-left: 10px;
+  padding-right: 10px;
   scrollbar-width: none;      /* Firefox */
   -ms-overflow-style: none;   /* Older Edge */
 }
@@ -69,6 +77,32 @@
   text-align: left;
 }
 
+#sliderControl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  align-items: center;
+  column-gap: 12px;
+  row-gap: 8px;
+  width: 100%;
+}
+
+.slider {
+  display: grid;
+  grid-template-columns: 3ch 180px 3ch;
+  align-items: center;
+  justify-self: end;
+  gap: 5px;
+}
+
+.slider p:first-child {
+  text-align: right;
+}
+
+.slider input[type="range"] {
+  width: 100%;
+  margin: 0;
+}
+
 .image {
   width: 100%;
   min-width: 100px;
@@ -80,6 +114,14 @@
   min-height: 40px;
   align-items: center;
   justify-content: center;
-  border-radius: 10%;
+  border-radius: 10px;
   padding: 10px;
+}
+
+p {
+  color: black;
+}
+
+label {
+  color: black
 }
