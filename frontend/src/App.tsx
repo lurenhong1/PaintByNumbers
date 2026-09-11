@@ -295,12 +295,14 @@ function App() {
                   {colorKeys.map(([number, [red, green, blue], mix]) =>(
                       <div className="colorInfo" key={number}>
                         <p className="colorNumber">{number}</p>
-                        <span style={{
-                          display: "inline-block",
-                          width: "24px",
-                          height: "24px",
-                          backgroundColor: `rgb(${red}, ${green}, ${blue})`,
-                        }}
+                        <span
+                            title="Palette color."
+                            style={{
+                              display: "inline-block",
+                              width: "24px",
+                              height: "24px",
+                              backgroundColor: `rgb(${red}, ${green}, ${blue})`,
+                            }}
                         />
                         <p
                             className="colorFormation"
@@ -314,12 +316,14 @@ function App() {
                           }
                         </p>
                         {mix
-                            ? <span style={{
-                              display: "inline-block",
-                              width: "24px",
-                              height: "24px",
-                              backgroundColor: `rgb(${mix.predictedRgb[0]}, ${mix.predictedRgb[1]}, ${mix.predictedRgb[2]})`,
-                            }}
+                            ? <span
+                                title="Estimated paint mix."
+                                style={{
+                                  display: "inline-block",
+                                  width: "24px",
+                                  height: "24px",
+                                  backgroundColor: `rgb(${mix.predictedRgb[0]}, ${mix.predictedRgb[1]}, ${mix.predictedRgb[2]})`,
+                                }}
                             />
                             : <span
                                 aria-hidden="true"
