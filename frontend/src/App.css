@@ -1,25 +1,36 @@
 .main {
-  width: 100%;
-  height: 100dvh;
+  height: 100%;
+  min-height: 0;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
 }
 
 .toolbar {
-  width: 100%;
   box-sizing: border-box;
   display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
   align-items: center;
   gap: 5px;
   padding: 10px;
   background-color: #dfdfdf;
   margin-bottom: 2px;
   border-radius: 10px;
-  overflow: auto;
+
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.toolbar::-webkit-scrollbar {
+  display: none;
+}
+
+.toolbar > .btn {
+  flex: 0 0 auto;
 }
 
 .imageDisplayWindow {
-  width: 100%;
   min-height: 0;
   overflow: hidden;
   box-sizing: border-box;
@@ -64,7 +75,6 @@
 }
 
 .colorSets {
-  width: 100%;
   display: grid;
   grid-template-columns: max-content 24px minmax(0, 1fr) 24px;
   align-items: center;
@@ -90,7 +100,6 @@
   align-items: center;
   column-gap: 12px;
   row-gap: 8px;
-  width: 100%;
 }
 
 .slider {

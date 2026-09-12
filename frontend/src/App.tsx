@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ChangeEvent } from 'react'
+import { useEffect, useRef, useState, type ChangeEvent, type WheelEvent } from 'react'
 import './App.css'
 import ImageCropModal from './components/ImageCropModal/ImageCropModal.tsx'
 
@@ -170,6 +170,17 @@ function App() {
     setIsCropModalOpen(false)
   }
 
+  function handleToolbarWheel(event: WheelEvent<HTMLDivElement>) {
+    const toolbar = event.currentTarget;
+
+    if (toolbar.scrollWidth <= toolbar.clientWidth) return;
+
+    if (Math.abs(event.deltaY) > Math.abs(event.deltaX)) {
+      event.preventDefault();
+      toolbar.scrollLeft += event.deltaY;
+    }
+  }
+
   async function handleGenerate(): Promise<void> {
     if (!imageFile) {
       setEmptyImage(true);
@@ -263,7 +274,7 @@ function App() {
   return (
     <>
       <section className="main">
-        <div className="toolbar">
+        <div className="toolbar" onWheel={handleToolbarWheel}>
           <button
               type='button'
               className="btn"
@@ -325,7 +336,6 @@ function App() {
           >
             Download All
           </button>
-
         </div>
         <div className="imageDisplayWindow">
           <div ref={leftDisplayRef} className="leftImageDisplay">
