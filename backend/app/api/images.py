@@ -28,13 +28,13 @@ async def process_image(
         )
 
     try:
-        numbered_bytes, expected_bytes, color_keys = process(image_bytes,
+        template_bytes, reference_bytes, color_keys = process(image_bytes,
                                                              color_count=color_count,
                                                              median_filter_size=median_filter_size,
                                                              merge_area=merge_area)
         return {
-            "numberedImage": base64.b64encode(numbered_bytes).decode("ascii"),
-            "expectedImage": base64.b64encode(expected_bytes).decode("ascii"),
+            "templateImage": base64.b64encode(template_bytes).decode("ascii"),
+            "referenceImage": base64.b64encode(reference_bytes).decode("ascii"),
             "colorKeys": color_keys,
         }
     except ValueError as error:

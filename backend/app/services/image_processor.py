@@ -11,29 +11,11 @@ import numpy as np
 
 import cv2
 
-from typing import cast
-
-# def convert_to_png(image_bytes: bytes) -> bytes:
-#     try:
-#         with Image.open(BytesIO(image_bytes)) as image:
-#             image.load()
-#
-#             normalized_image = ImageOps.exif_transpose(image)
-#             normalized_image = normalized_image.convert("RGB")
-#
-#             output_buffer = BytesIO()
-#             normalized_image.save(output_buffer, format="PNG")
-#
-#             return output_buffer.getvalue()
-#
-#     except (UnidentifiedImageError, OSError) as error:
-#         raise ValueError("The uploaded file is not a valid image") from error
-
 def process(image_bytes: bytes, color_count: int = 12, median_filter_size: int = 7, merge_area = 200) -> tuple[bytes, bytes, list[tuple[int, tuple[int, int, int]]]]:
-    reduced_image = reduce_colors(image_bytes, color_count, median_filter_size, merge_area)
-    color_keys, locations = locate_numbers(reduced_image)
+    reference_image = reduce_colors(image_bytes, color_count, median_filter_size, merge_area)
+    color_keys, locations = locate_numbers(reference_image)
 
-    boundary = find_boundary(reduced_image)
+    boundary = find_boundary(reference_image)
 
     height, width = boundary.shape
     outlined_array = np.full((height, width, 3), 255, dtype=np.uint8)
@@ -42,14 +24,14 @@ def process(image_bytes: bytes, color_count: int = 12, median_filter_size: int =
 
     outlined_image = Image.fromarray(outlined_array)
 
-    numbered_image = draw_numbers(outlined_image, locations)
+    template_image = draw_numbers(outlined_image, locations)
 
-    numbered_buffer = BytesIO()
-    numbered_image.save(numbered_buffer, format="PNG")
-    expected_buffer = BytesIO()
-    reduced_image.save(expected_buffer, format="PNG")
+    template_buffer = BytesIO()
+    template_image.save(template_buffer, format="PNG")
+    reference_buffer = BytesIO()
+    reference_image.save(reference_buffer, format="PNG")
 
-    return numbered_buffer.getvalue(), expected_buffer.getvalue(), color_keys
+    return template_buffer.getvalue(), reference_buffer.getvalue(), color_keys
 
 def reduce_colors(image_bytes: bytes, color_count: int = 12, median_filter_size: int = 7, merge_area = 200) -> Image.Image:
     if not (2 <= color_count <= 50 and median_filter_size % 2 == 1):

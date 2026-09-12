@@ -1,5 +1,6 @@
 import { useRef, useState, type ChangeEvent } from 'react'
 import './App.css'
+import ImageCropModal from './components/ImageCropModal/ImageCropModal.tsx'
 
 function App() {
   type RGB = [number, number, number];
@@ -18,8 +19,8 @@ function App() {
   type ColorKey = [number, RGB, PaintMix?, RGB?];
 
   type ProcessImageResponse = {
-    numberedImage: string;
-    expectedImage: string;
+    templateImage: string;
+    referenceImage: string;
     colorKeys: ColorKey[];
   };
 
@@ -29,8 +30,9 @@ function App() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [inputImage, setInputImage] = useState<string|null>(null);
-  const [numberedImage, setNumberedImage] = useState<string|null>(null);
-  const [expectedImage, setExpectedImage] = useState<string|null>(null);
+  const [croppedImage, setCroppedImage] = useState<string|null>(null);
+  const [templateImage, setTemplateImage] = useState<string|null>(null);
+  const [referenceImage, setReferenceImage] = useState<string|null>(null);
   const [colorKeys, setColorKeys] = useState<ColorKey[]>([]);
   const [processing, setProcessing] = useState<boolean>(false);
   const [processMessage, setProcessMessage] = useState<string>('');
@@ -46,6 +48,10 @@ function App() {
   const minMergeArea = 100;
   const maxMergeArea = 900;
   const [mergeArea, setMergeArea] = useState<number>(500);
+
+  const [aspectRatio, setAspectRatio] = useState<number | undefined>();
+
+  const [isCropModalOpen, setIsCropModalOpen] = useState<boolean>(false);
 
   function formatPaintMix(ratios: PaintRatios): string {
     return Object.entries(ratios)
@@ -65,8 +71,11 @@ function App() {
 
     setImageFile(selectedImage)
 
+    const image = URL.createObjectURL(selectedImage)
+
     // console.log("Selected image:", selectedImage);
-    setInputImage(URL.createObjectURL(selectedImage))
+    setInputImage(image)
+    setCroppedImage(image)
   }
 
   function startProcess(message: string) {
@@ -77,6 +86,24 @@ function App() {
   function endProcess() {
     setProcessing(false)
     setProcessMessage('')
+  }
+
+  function onCancel() {
+    setIsCropModalOpen(false);
+  }
+
+  function handleCropApply(blob: Blob) {
+    const originalName = imageFile?.name.replace(/\.[^.]+$/, '') ?? 'image'
+
+    const croppedFile = new File(
+        [blob],
+        `${originalName}-cropped.png`,
+        { type: blob.type }
+    )
+
+    setCroppedImage(URL.createObjectURL(blob))
+    setImageFile(croppedFile)
+    setIsCropModalOpen(false)
   }
 
   async function handleGenerate(): Promise<void> {
@@ -113,8 +140,8 @@ function App() {
       const result: ProcessImageResponse = await response.json();
       console.log("Response: ", result);
 
-      setNumberedImage(`data:image/png;base64,${result.numberedImage}`);
-      setExpectedImage(`data:image/png;base64,${result.expectedImage}`);
+      setTemplateImage(`data:image/png;base64,${result.templateImage}`);
+      setReferenceImage(`data:image/png;base64,${result.referenceImage}`);
       setColorKeys(result.colorKeys);
     } catch (error) {
       console.error("Failed to upload image: ", error);
@@ -161,9 +188,10 @@ function App() {
 
   return (
     <>
-      <section id="main">
-        <div id="toolbar">
+      <section className="main">
+        <div className="toolbar">
           <button
+              type='button'
               className="btn"
               onClick={() => fileInputRef.current?.click()}
               disabled={processing}
@@ -179,14 +207,16 @@ function App() {
           />
 
           <button
+              type='button'
               className="btn"
               onClick={handleGenerate}
-              disabled={!inputImage || processing}
+              disabled={!croppedImage || processing}
           >
             Generate
           </button>
 
           <button
+              type='button'
               className="btn"
               onClick={handleGetColorRecipe}
               disabled={colorKeys.length === 0 || processing}
@@ -194,33 +224,52 @@ function App() {
             Get Color Recipe
           </button>
 
-          <button className="btn">
+          <button
+              type='button'
+              className="btn"
+          >
             Download Referenced
           </button>
 
-          <button className="btn">
+          <button
+              type='button'
+              className="btn"
+          >
             Download Template
           </button>
 
-          <button className="btn">
+          <button
+              type='button'
+              className="btn"
+          >
             Download Color Sets
           </button>
 
-          <button className="btn">
+          <button
+              type='button'
+              className="btn"
+          >
             Download All
           </button>
 
         </div>
-        <div id="imageDisplayWindow">
-          <div id="leftImageDisplay">
-            {inputImage && (
+        <div className="imageDisplayWindow">
+          <div className="leftImageDisplay">
+            {croppedImage && (
                 <div>
                   <img
-                      src={inputImage}
+                      src={croppedImage}
                       alt="Input image preview"
                       className="image"
                   />
-                  <div id="sliderControl">
+                  <button
+                      type='button'
+                      className="btn"
+                      onClick={() => {setIsCropModalOpen(true)}}
+                  >
+                    Crop Image
+                  </button>
+                  <div className="sliderControl">
                     <label>Color Count: {colorCount}</label>
                     <div className="slider">
                       <p>{minColorCount}</p>
@@ -269,29 +318,28 @@ function App() {
                       <p>{maxMergeArea}</p>
                     </div>
                   </div>
-
                 </div>
             )}
           </div>
-          <div id="rightImageDisplay">
-            {expectedImage && (
+          <div className="rightImageDisplay">
+            {referenceImage && (
                 <img
-                    src={expectedImage}
+                    src={referenceImage}
                     alt="Input image preview"
                     className="image"
                 />
             )}
 
-            {numberedImage && (
+            {templateImage && (
                 <img
-                    src={numberedImage}
+                    src={templateImage}
                     alt="Input image preview"
                     className="image"
                 />
             )}
 
             {colorKeys &&
-                <div id="colorSets">
+                <div className="colorSets">
                   {colorKeys.map(([number, [red, green, blue], mix]) =>(
                       <div className="colorInfo" key={number}>
                         <p className="colorNumber">{number}</p>
@@ -348,7 +396,15 @@ function App() {
 
 
       </section>
-
+      {isCropModalOpen && inputImage &&
+          <ImageCropModal
+              imageUrl={inputImage}
+              aspectRatio={aspectRatio}
+              onAspectRatioChange={setAspectRatio}
+              onApply={handleCropApply}
+              onCancel={onCancel}
+          />
+      }
     </>
   )
 }
