@@ -1,6 +1,69 @@
-import { useRef, useState, type ChangeEvent } from 'react'
+import { useEffect, useRef, useState, type ChangeEvent } from 'react'
 import './App.css'
 import ImageCropModal from './components/ImageCropModal/ImageCropModal.tsx'
+
+function useScrollHint(bottomTolerance = 4) {
+  const panelRef = useRef<HTMLDivElement>(null);
+  const [showHint, setShowHint] = useState(false);
+
+  useEffect(() => {
+    const panel = panelRef.current;
+    if (!panel) return;
+
+    let animationFrame = 0;
+
+    const updateVisibility = () => {
+      const distanceFromBottom =
+          panel.scrollHeight -
+          panel.clientHeight -
+          panel.scrollTop;
+
+      setShowHint(distanceFromBottom > bottomTolerance);
+    };
+
+    const scheduleUpdate = () => {
+      cancelAnimationFrame(animationFrame);
+      animationFrame = requestAnimationFrame(updateVisibility);
+    };
+
+    const resizeObserver = new ResizeObserver(scheduleUpdate);
+
+    const observeSizes = () => {
+      resizeObserver.disconnect();
+      resizeObserver.observe(panel);
+
+      for (const child of panel.children) {
+        resizeObserver.observe(child);
+      }
+
+      scheduleUpdate();
+    };
+
+    const mutationObserver = new MutationObserver(observeSizes);
+
+    mutationObserver.observe(panel, {
+      childList: true,
+    });
+
+    panel.addEventListener("scroll", scheduleUpdate, {
+      passive: true,
+    });
+
+    observeSizes();
+
+    return () => {
+      cancelAnimationFrame(animationFrame);
+      panel.removeEventListener("scroll", scheduleUpdate);
+      mutationObserver.disconnect();
+      resizeObserver.disconnect();
+    };
+  }, [bottomTolerance]);
+
+  return {
+    panelRef,
+    showHint,
+  };
+}
 
 function App() {
   type RGB = [number, number, number];
@@ -34,6 +97,7 @@ function App() {
   const [templateImage, setTemplateImage] = useState<string|null>(null);
   const [referenceImage, setReferenceImage] = useState<string|null>(null);
   const [colorKeys, setColorKeys] = useState<ColorKey[]>([]);
+
   const [processing, setProcessing] = useState<boolean>(false);
   const [processMessage, setProcessMessage] = useState<string>('');
   const [imageFile, setImageFile] = useState<File|null>(null);
@@ -186,6 +250,16 @@ function App() {
 
   }
 
+  const {
+    panelRef: leftDisplayRef,
+    showHint: showLeftHint,
+  } = useScrollHint();
+
+  const {
+    panelRef: rightDisplayRef,
+    showHint: showRightHint,
+  } = useScrollHint();
+
   return (
     <>
       <section className="main">
@@ -254,7 +328,7 @@ function App() {
 
         </div>
         <div className="imageDisplayWindow">
-          <div className="leftImageDisplay">
+          <div ref={leftDisplayRef} className="leftImageDisplay">
             {croppedImage && (
                 <div>
                   <img
@@ -321,7 +395,7 @@ function App() {
                 </div>
             )}
           </div>
-          <div className="rightImageDisplay">
+          <div ref={rightDisplayRef} className="rightImageDisplay">
             {referenceImage && (
                 <img
                     src={referenceImage}
@@ -388,6 +462,23 @@ function App() {
                   }
                 </div>
             }
+          </div>
+          <div
+              className={`scroll-hint scroll-hint-left ${
+                  showLeftHint ? "" : "hidden"
+              }`}
+              aria-hidden="true"
+          >
+            ⌄
+          </div>
+
+          <div
+              className={`scroll-hint scroll-hint-right ${
+                  showRightHint ? "" : "hidden"
+              }`}
+              aria-hidden="true"
+          >
+            ⌄
           </div>
         </div>
         {emptyImage && (<p>Please select an image before upload.</p>)}

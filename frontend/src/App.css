@@ -20,6 +20,8 @@
 
 .imageDisplayWindow {
   width: 100%;
+  min-height: 0;
+  overflow: hidden;
   box-sizing: border-box;
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -28,41 +30,37 @@
   border-radius: 10px;
 }
 
-.leftImageDisplay {
-  display: flex;
-  flex-direction: column;
-  overflow: auto;
-  gap: 10px;
-  justify-content: center;
-  padding-left: 10px;
-  padding-right: 10px;
-  border-right: solid 1px black;
-  scrollbar-width: none;      /* Firefox */
-  -ms-overflow-style: none;   /* Older Edge */
-}
-
-.leftImageDisplay::-webkit-scrollbar {
-  display: none;              /* Chrome, Safari, newer Edge */
-}
-
-.parameterBar {
-  width: 100%;
-  min-width: 100px;
-}
-
+.leftImageDisplay,
 .rightImageDisplay {
   display: flex;
   flex-direction: column;
-  overflow: auto;
+  min-height: 0;
+  overflow-y: auto;
   gap: 10px;
-  padding-left: 10px;
-  padding-right: 10px;
-  scrollbar-width: none;      /* Firefox */
-  -ms-overflow-style: none;   /* Older Edge */
+  padding-inline: 10px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
+.leftImageDisplay::-webkit-scrollbar,
 .rightImageDisplay::-webkit-scrollbar {
-  display: none;              /* Chrome, Safari, newer Edge */
+  display: none;
+}
+
+.leftImageDisplay {
+  grid-column: 1;
+  grid-row: 1;
+  border-right: 1px solid black;
+}
+
+.rightImageDisplay {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.leftImageDisplay > *,
+.rightImageDisplay > * {
+  flex-shrink: 0;
 }
 
 .colorSets {
@@ -113,7 +111,9 @@
 }
 
 .image {
+  display: block;
   width: 100%;
+  height: auto;
   min-width: 100px;
 }
 
@@ -123,4 +123,43 @@ p {
 
 label {
   color: black
+}
+
+.scroll-hint {
+  align-self: end;
+  justify-self: center;
+  margin-bottom: 20px;
+  pointer-events: none;
+
+  background-color: rgb(17 24 39 / 92%);
+  border: 2px solid #ffffff;
+  color: #ffffff;
+
+  width: 40px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  z-index: 10;
+  animation: bounce 1.4s infinite;
+}
+
+.scroll-hint-left {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.scroll-hint-right {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.scroll-hint.hidden {
+  opacity: 0;
+}
+
+@keyframes bounce {
+  50% { transform: translateY(6px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scroll-hint { animation: none; }
 }
