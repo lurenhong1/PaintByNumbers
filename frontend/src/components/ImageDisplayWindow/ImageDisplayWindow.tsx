@@ -63,7 +63,12 @@ function ImageDisplayWindow ({
         <div className="imageDisplayWindow">
             <div ref={leftDisplayRef} className="leftImageDisplay">
                 {croppedImage && (
-                    <div>
+                    <div style={{
+                        display: "flex",
+                        flexDirection: 'column',
+                        gap: '10px',
+                        alignItems: 'center'
+                    }}>
                         <img
                             src={croppedImage}
                             alt="Input image preview"

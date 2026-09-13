@@ -20,6 +20,7 @@ select {
 .btn {
   display: inline-flex;
   box-sizing: border-box;
+  width: fit-content;
   min-width: 70px;
   min-height: 40px;
   align-items: center;

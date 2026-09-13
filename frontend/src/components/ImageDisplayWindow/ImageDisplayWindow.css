@@ -65,8 +65,8 @@
 .sliderControl {
     display: grid;
     grid-template-columns: max-content 1fr;
-    align-items: center;
-    column-gap: 12px;
+    align-content: center;
+    column-gap: 30px;
     row-gap: 8px;
 }
 
