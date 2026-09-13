@@ -30,4 +30,10 @@ export type ProcessSettings = {
     colorCount: number;
     medianFilterSize: number;
     mergeArea: number;
+    outputDimension: Dimensions;
+};
+
+export type Dimensions = {
+    width: number;
+    height: number;
 };

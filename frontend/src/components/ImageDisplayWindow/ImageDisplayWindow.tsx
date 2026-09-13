@@ -1,7 +1,9 @@
+import {useState} from "react";
 import type {
     ColorKey,
     PaintRatios,
-    ProcessSettings
+    ProcessSettings,
+    Dimensions
 } from "../../types/images.ts";
 import useScrollHint from "../../hooks/useScrollHint.ts";
 import "./ImageDisplayWindow.css";
@@ -16,6 +18,7 @@ type ImageDisplayWindowProps = {
     onColorCountChange: (value: number) => void;
     onMedianFilterSizeChange: (value: number) => void;
     onMergeAreaChange: (value: number) => void;
+    onOutputDimensionChange: (dimension: Dimensions) => void;
     onOpenCrop: () => void;
 };
 
@@ -29,6 +32,7 @@ function ImageDisplayWindow ({
     onColorCountChange,
     onMedianFilterSizeChange,
     onMergeAreaChange,
+    onOutputDimensionChange,
     onOpenCrop
 }: ImageDisplayWindowProps) {
     const minColorCount = 2;
@@ -37,11 +41,12 @@ function ImageDisplayWindow ({
     const maxFilterSize = 11;
     const minMergeArea = 100;
     const maxMergeArea = 900;
+    const [currentRatio, setCurrentRatio] = useState<number>(0);
 
     const hasColorKeys = colorKeys.length > 0;
     const hasAnyMix = colorKeys.some(([, , mix]) => Boolean(mix));
 
-    const { colorCount, medianFilterSize, mergeArea } = settings;
+    const { colorCount, medianFilterSize, mergeArea, outputDimension } = settings;
 
     const {
         panelRef: leftDisplayRef,
@@ -62,6 +67,31 @@ function ImageDisplayWindow ({
             .join(" · ");
     }
 
+    const MIN_OUTPUT_PIXELS = 1;
+    const MAX_OUTPUT_PIXELS = 4096;
+
+    function fitWithinMaximum(
+        width: number,
+        height: number,
+    ): Dimensions {
+        const scale = Math.min(
+            1,
+            MAX_OUTPUT_PIXELS / width,
+            MAX_OUTPUT_PIXELS / height,
+        );
+
+        return {
+            width: Math.max(
+                MIN_OUTPUT_PIXELS,
+                Math.round(width * scale),
+            ),
+            height: Math.max(
+                MIN_OUTPUT_PIXELS,
+                Math.round(height * scale),
+            ),
+        };
+    }
+
     return (
         <div className="imageDisplayWindow">
             <div ref={leftDisplayRef} className="leftImageDisplay">
@@ -76,6 +106,16 @@ function ImageDisplayWindow ({
                             src={croppedImage}
                             alt="Input image preview"
                             className="image"
+                            onLoad={(event) => {
+                                const { naturalWidth, naturalHeight } = event.currentTarget;
+                                const ratio = naturalWidth / naturalHeight;
+
+                                setCurrentRatio(ratio);
+
+                                onOutputDimensionChange(
+                                    fitWithinMaximum(naturalWidth, naturalHeight),
+                                );
+                            }}
                         />
                         <button
                             type='button'
@@ -84,6 +124,65 @@ function ImageDisplayWindow ({
                         >
                             Crop Image
                         </button>
+                        {currentRatio &&
+                            <span>Current Ratio: {currentRatio.toFixed(2)}</span>
+                        }
+                        <div className="dimensionControl">
+                            <span>Output Dimension: </span>
+                            <input
+                                type="number"
+                                min={MIN_OUTPUT_PIXELS}
+                                max={MAX_OUTPUT_PIXELS}
+                                step={1}
+                                value={outputDimension.width}
+                                onChange={(event) => {
+                                    const width = event.currentTarget.valueAsNumber;
+
+                                    if (!Number.isFinite(width) || currentRatio <= 0) {
+                                        return;
+                                    }
+
+                                    const clampedWidth = Math.min(
+                                        MAX_OUTPUT_PIXELS,
+                                        Math.max(MIN_OUTPUT_PIXELS, Math.round(width)),
+                                    );
+
+                                    onOutputDimensionChange(
+                                        fitWithinMaximum(
+                                            clampedWidth,
+                                            clampedWidth / currentRatio,
+                                        ),
+                                    );
+                                }}
+                            />
+                            :
+                            <input
+                                type="number"
+                                min={MIN_OUTPUT_PIXELS}
+                                max={MAX_OUTPUT_PIXELS}
+                                step={1}
+                                value={outputDimension.height}
+                                onChange={(event) => {
+                                    const height = event.currentTarget.valueAsNumber;
+
+                                    if (!Number.isFinite(height) || currentRatio <= 0) {
+                                        return;
+                                    }
+
+                                    const clampedHeight = Math.min(
+                                        MAX_OUTPUT_PIXELS,
+                                        Math.max(MIN_OUTPUT_PIXELS, Math.round(height)),
+                                    );
+
+                                    onOutputDimensionChange(
+                                        fitWithinMaximum(
+                                            clampedHeight * currentRatio,
+                                            clampedHeight,
+                                        ),
+                                    );
+                                }}
+                            />
+                        </div>
                         <div className="sliderControl">
                             <label>Color Count: {colorCount}</label>
                             <div className="slider">

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { ColorKey } from './types/images';
+import type { ColorKey, Dimensions } from './types/images';
 import './App.css';
 import ImageCropModal from './components/ImageCropModal/ImageCropModal.tsx';
 import { getColorRecipes, processImage } from './api/imagesApi';
@@ -25,12 +25,14 @@ function App() {
   const [mergeArea, setMergeArea] = useState<number>(500);
 
   const [aspectRatio, setAspectRatio] = useState<number | undefined>();
+  const [outputDimension, setOutputDimension] = useState<Dimensions>({ width: 1, height: 1});
 
   function handleImageSelected(selectedImage: File) {
     setImageFile(selectedImage);
 
     const image = URL.createObjectURL(selectedImage);
 
+    // console.log("Selected image:", selectedImage);
     setInputImage(image);
     setCroppedImage(image);
   }
@@ -42,13 +44,14 @@ function App() {
     }
 
     setIsEmptyImage(false);
-    onProcessStart("Image Processing");
+    startProcess("Image Processing");
 
     try {
       const result = await processImage(imageFile, {
         colorCount,
         medianFilterSize,
         mergeArea,
+        outputDimension
       });
 
       setTemplateImage(`data:image/png;base64,${result.templateImage}`);
@@ -57,7 +60,7 @@ function App() {
     } catch (error) {
       console.error('Failed to upload image:', error);
     } finally {
-      onProcessEnd();
+      endProcess();
     }
   }
 
@@ -66,7 +69,7 @@ function App() {
       return;
     }
 
-    onProcessStart("Generating Color Recipe");
+    startProcess("Generating Color Recipe");
 
     try {
       const result = await getColorRecipes(colorKeys);
@@ -74,7 +77,7 @@ function App() {
     } catch (error) {
       console.error("Failed to generate color recipes: ", error);
     } finally {
-      onProcessEnd();
+      endProcess();
     }
   }
 
@@ -92,12 +95,12 @@ function App() {
     setIsCropModalOpen(false);
   }
 
-  function onProcessStart(message: string) {
+  function startProcess(message: string) {
     setIsProcessing(true);
     setProcessMessage(message);
   }
 
-  function onProcessEnd() {
+  function endProcess() {
     setIsProcessing(false);
     setProcessMessage('');
   }
@@ -126,11 +129,13 @@ function App() {
             settings={{
               colorCount,
               medianFilterSize,
-              mergeArea
+              mergeArea,
+              outputDimension
             }}
             onColorCountChange={setColorCount}
             onMedianFilterSizeChange={setMedianFilterSize}
             onMergeAreaChange={setMergeArea}
+            onOutputDimensionChange={setOutputDimension}
             onOpenCrop={() => setIsCropModalOpen(true)}
         />
 

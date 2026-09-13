@@ -21,6 +21,8 @@ export async function processImage(
         String(settings.medianFilterSize),
     );
     formData.append('mergeArea', String(settings.mergeArea));
+    formData.append('outputWidth', String(settings.outputDimension.width));
+    formData.append('outputHeight', String(settings.outputDimension.height));
 
     const response = await fetch(
         `${API_BASE_URL}/api/images/process`,
