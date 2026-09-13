@@ -3,6 +3,9 @@
     inset: 0;
     z-index: 1000;
 
+    min-height: 600px;
+    min-width: 900px;
+
     display: grid;
     place-items: safe center;
     box-sizing: border-box;
@@ -15,11 +18,13 @@
 
 .crop-modal {
     width: fit-content;
-    min-width: min(600px, calc(100dvw - 40px));
-    max-width: calc(100dvw - 40px);
+    min-width: 600px;
+    max-width: calc(max(100dvw, 900px) - 40px);
+
     height: fit-content;
     min-height: 300px;
-    max-height: max(600px, calc(100dvh - 40px));
+    max-height: calc(max(100dvh, 600px) - 40px);
+
     box-sizing: border-box;
 
     display: grid;
