@@ -38,6 +38,9 @@ function ImageDisplayWindow ({
     const minMergeArea = 100;
     const maxMergeArea = 900;
 
+    const hasColorKeys = colorKeys.length > 0;
+    const hasAnyMix = colorKeys.some(([, , mix]) => Boolean(mix));
+
     const { colorCount, medianFilterSize, mergeArea } = settings;
 
     const {
@@ -150,54 +153,75 @@ function ImageDisplayWindow ({
                     />
                 )}
 
-                {colorKeys &&
-                    <div className="colorSets">
-                        {colorKeys.map(([number, [red, green, blue], mix]) =>(
-                            <div className="colorInfo" key={number}>
-                                <span className="colorNumber">{number}</span>
-                                <span
-                                    title="Palette color."
-                                    style={{
-                                        display: "inline-block",
-                                        width: "24px",
-                                        height: "24px",
-                                        backgroundColor: `rgb(${red}, ${green}, ${blue})`,
-                                    }}
-                                />
-                                <span
-                                    className="colorFormation"
-                                    title={mix
-                                        ? `Predicted rgb(${mix.predictedRgb.join(", ")}); average RGB error ${mix.rgbError}`
-                                        : undefined
-                                    }
-                                >
-                                    {mix ? formatPaintMix(mix.ratios)
-                                        : "Generate a recipe to see the estimated mix"
-                                    }
-                                </span>
-                                {mix
-                                    ? <span
-                                        title="Estimated paint mix."
-                                        style={{
-                                            display: "inline-block",
-                                            width: "24px",
-                                            height: "24px",
-                                            backgroundColor: `rgb(${mix.predictedRgb[0]}, ${mix.predictedRgb[1]}, ${mix.predictedRgb[2]})`,
-                                        }}
-                                    />
-                                    : <span
-                                        aria-hidden="true"
-                                        style={{
-                                            display: "inline-block",
-                                            width: "24px",
-                                            height: "24px",
-                                            visibility: "hidden",
-                                        }}
-                                    />
+                {hasColorKeys &&
+                    <div>
+                        {!hasAnyMix && (
+                            <span>Generate color recipes to see the estimated mix for each color.</span>
+                        )}
+                        <div className="colorSets">
+                            <div className="colorInfo colorHeader">
+                                <span>#</span>
+                                <span>Color</span>
+                                {hasAnyMix
+                                    ? (
+                                            <>
+                                            <span>Estimated Mix</span>
+                                            <span>Result</span>
+                                        </>
+                                    )
+                                    : (
+                                        <>
+                                            <span/>
+                                            <span/>
+                                        </>
+                                    )
                                 }
                             </div>
-                        ))
-                        }
+
+                            {colorKeys.map(([number, [red, green, blue], mix]) =>(
+                                <div className="colorInfo" key={number}>
+                                    <span className="colorNumber">{number}</span>
+                                    <span
+                                        title="Palette color."
+                                        style={{
+                                            display: "inline-block",
+                                            width: "24px",
+                                            height: "24px",
+                                            backgroundColor: `rgb(${red}, ${green}, ${blue})`,
+                                        }}
+                                    />
+                                    <span
+                                        className="colorFormation"
+                                        title={mix
+                                            ? `Predicted rgb(${mix.predictedRgb.join(", ")}); average RGB error ${mix.rgbError}`
+                                            : undefined
+                                        }
+                                    >
+                                    {mix ? formatPaintMix(mix.ratios) : null}
+                                </span>
+                                    {mix
+                                        ? <span
+                                            title="Estimated paint mix."
+                                            style={{
+                                                display: "inline-block",
+                                                width: "24px",
+                                                height: "24px",
+                                                backgroundColor: `rgb(${mix.predictedRgb[0]}, ${mix.predictedRgb[1]}, ${mix.predictedRgb[2]})`,
+                                            }}
+                                        />
+                                        : <span
+                                            aria-hidden="true"
+                                            style={{
+                                                display: "inline-block",
+                                                width: "24px",
+                                                height: "24px",
+                                                visibility: "hidden",
+                                            }}
+                                        />
+                                    }
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 }
             </div>

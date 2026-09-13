@@ -46,7 +46,7 @@
 
 .colorSets {
     display: grid;
-    grid-template-columns: max-content 24px minmax(0, 1fr) 24px;
+    grid-template-columns: max-content max-content minmax(0, 1fr) max-content;
     align-items: center;
     column-gap: 12px;
     row-gap: 8px;
@@ -54,6 +54,13 @@
 
 .colorInfo {
     display: contents;
+}
+
+.colorHeader > span {
+    align-self: end;
+    font-weight: bold;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #aaa;
 }
 
 .colorNumber {
