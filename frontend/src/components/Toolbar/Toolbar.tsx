@@ -6,7 +6,7 @@ import {
 import './Toolbar.css';
 
 type ToolbarProps = {
-    processing: boolean;
+    isProcessing: boolean;
     canGenerate: boolean;
     canGetColorRecipe: boolean;
     onImageSelected: (file: File) => void;
@@ -15,7 +15,7 @@ type ToolbarProps = {
 };
 
 function Toolbar({
-    processing,
+    isProcessing,
     canGenerate,
     canGetColorRecipe,
     onImageSelected,
@@ -52,7 +52,7 @@ function Toolbar({
                 type='button'
                 className="btn"
                 onClick={() => fileInputRef.current?.click()}
-                disabled={processing}
+                disabled={isProcessing}
             >
                 Upload Image
             </button>
@@ -68,7 +68,7 @@ function Toolbar({
                 type='button'
                 className="btn"
                 onClick={onGenerate}
-                disabled={!canGenerate || processing}
+                disabled={!canGenerate || isProcessing}
             >
                 Generate
             </button>
@@ -77,7 +77,7 @@ function Toolbar({
                 type='button'
                 className="btn"
                 onClick={onGetColorRecipe}
-                disabled={!canGetColorRecipe || processing}
+                disabled={!canGetColorRecipe || isProcessing}
             >
                 Get Color Recipe
             </button>

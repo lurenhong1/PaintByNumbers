@@ -11,7 +11,7 @@ type ImageDisplayWindowProps = {
     referenceImage: string | null;
     templateImage: string | null;
     colorKeys: ColorKey[];
-    processing: boolean;
+    isProcessing: boolean;
     settings: ProcessSettings;
     onColorCountChange: (value: number) => void;
     onMedianFilterSizeChange: (value: number) => void;
@@ -24,7 +24,7 @@ function ImageDisplayWindow ({
     referenceImage,
     templateImage,
     colorKeys,
-    processing,
+    isProcessing,
     settings,
     onColorCountChange,
     onMedianFilterSizeChange,
@@ -86,7 +86,7 @@ function ImageDisplayWindow ({
                                     max={maxColorCount}
                                     step={1}
                                     value={colorCount}
-                                    disabled={processing}
+                                    disabled={isProcessing}
                                     title="Controls amount of color present."
                                     onChange={(e) => onColorCountChange(e.currentTarget.valueAsNumber)}
                                 />
@@ -102,7 +102,7 @@ function ImageDisplayWindow ({
                                     max={maxFilterSize}
                                     step={2}
                                     value={medianFilterSize}
-                                    disabled={processing}
+                                    disabled={isProcessing}
                                     title="Controls image smoothness."
                                     onChange={(e) => onMedianFilterSizeChange(e.currentTarget.valueAsNumber)}
                                 />
@@ -118,7 +118,7 @@ function ImageDisplayWindow ({
                                     max={maxMergeArea}
                                     step={100}
                                     value={mergeArea}
-                                    disabled={processing}
+                                    disabled={isProcessing}
                                     title="Controls image detail."
                                     onChange={(e) => onMergeAreaChange(e.currentTarget.valueAsNumber)}
                                 />

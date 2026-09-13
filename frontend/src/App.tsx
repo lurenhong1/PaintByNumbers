@@ -7,16 +7,18 @@ import Toolbar from "./components/Toolbar/Toolbar.tsx";
 import ImageDisplayWindow from "./components/ImageDisplayWindow/ImageDisplayWindow.tsx";
 
 function App() {
+  const [imageFile, setImageFile] = useState<File|null>(null);
   const [inputImage, setInputImage] = useState<string|null>(null);
   const [croppedImage, setCroppedImage] = useState<string|null>(null);
   const [templateImage, setTemplateImage] = useState<string|null>(null);
   const [referenceImage, setReferenceImage] = useState<string|null>(null);
   const [colorKeys, setColorKeys] = useState<ColorKey[]>([]);
 
-  const [processing, setProcessing] = useState<boolean>(false);
+  const [isProcessing, setIsProcessing] = useState<boolean>(false);
+  const [isEmptyImage, setIsEmptyImage] = useState<boolean>(false);
+  const [isCropModalOpen, setIsCropModalOpen] = useState<boolean>(false);
+
   const [processMessage, setProcessMessage] = useState<string>('');
-  const [imageFile, setImageFile] = useState<File|null>(null);
-  const [emptyImage, setEmptyImage] = useState<boolean>(false);
 
   const [colorCount, setColorCount] = useState<number>(20);
   const [medianFilterSize, setMedianFilterSize] = useState<number>(7);
@@ -24,26 +26,23 @@ function App() {
 
   const [aspectRatio, setAspectRatio] = useState<number | undefined>();
 
-  const [isCropModalOpen, setIsCropModalOpen] = useState<boolean>(false);
-
   function handleImageSelected(selectedImage: File) {
     setImageFile(selectedImage);
 
     const image = URL.createObjectURL(selectedImage);
 
-    // console.log("Selected image:", selectedImage);
     setInputImage(image);
     setCroppedImage(image);
   }
 
   async function handleGenerate(): Promise<void> {
     if (!imageFile) {
-      setEmptyImage(true);
+      setIsEmptyImage(true);
       return;
     }
 
-    setEmptyImage(false);
-    startProcess("Image Processing");
+    setIsEmptyImage(false);
+    onProcessStart("Image Processing");
 
     try {
       const result = await processImage(imageFile, {
@@ -58,7 +57,7 @@ function App() {
     } catch (error) {
       console.error('Failed to upload image:', error);
     } finally {
-      endProcess();
+      onProcessEnd();
     }
   }
 
@@ -67,7 +66,7 @@ function App() {
       return;
     }
 
-    startProcess("Generating Color Recipe");
+    onProcessStart("Generating Color Recipe");
 
     try {
       const result = await getColorRecipes(colorKeys);
@@ -75,7 +74,7 @@ function App() {
     } catch (error) {
       console.error("Failed to generate color recipes: ", error);
     } finally {
-      endProcess();
+      onProcessEnd();
     }
   }
 
@@ -93,13 +92,13 @@ function App() {
     setIsCropModalOpen(false);
   }
 
-  function startProcess(message: string) {
-    setProcessing(true);
+  function onProcessStart(message: string) {
+    setIsProcessing(true);
     setProcessMessage(message);
   }
 
-  function endProcess() {
-    setProcessing(false);
+  function onProcessEnd() {
+    setIsProcessing(false);
     setProcessMessage('');
   }
 
@@ -111,7 +110,7 @@ function App() {
     <>
       <section className="main">
         <Toolbar
-            processing={processing}
+            isProcessing={isProcessing}
             canGenerate={croppedImage !== null}
             canGetColorRecipe={colorKeys.length > 0}
             onImageSelected={handleImageSelected}
@@ -123,7 +122,7 @@ function App() {
             referenceImage={referenceImage}
             templateImage={templateImage}
             colorKeys={colorKeys}
-            processing={processing}
+            isProcessing={isProcessing}
             settings={{
               colorCount,
               medianFilterSize,
@@ -135,10 +134,8 @@ function App() {
             onOpenCrop={() => setIsCropModalOpen(true)}
         />
 
-        {emptyImage && (<p>Please select an image before upload.</p>)}
-        {processing && (<p>{processMessage}</p>)}
-
-
+        {isEmptyImage && (<p>Please select an image before upload.</p>)}
+        {isProcessing && (<p>{processMessage}</p>)}
 
       </section>
       {isCropModalOpen && inputImage &&
