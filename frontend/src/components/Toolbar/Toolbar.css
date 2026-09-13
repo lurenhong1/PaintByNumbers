@@ -8,8 +8,7 @@
     gap: 5px;
     padding: 10px;
     background-color: #dfdfdf;
-    margin-bottom: 2px;
-    border-radius: 10px;
+    border-bottom: 3px solid black;
 
     scrollbar-width: none;
     -ms-overflow-style: none;

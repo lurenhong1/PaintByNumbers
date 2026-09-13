@@ -4,9 +4,8 @@
     box-sizing: border-box;
     display: grid;
     grid-template-columns: 1fr 1fr;
-    padding-top: 10px;
+    padding: 10px;
     background-color: #dfdfdf;
-    border-radius: 10px;
 }
 
 .leftImageDisplay,
@@ -16,7 +15,6 @@
     min-height: 0;
     overflow-y: auto;
     gap: 10px;
-    padding-inline: 10px;
     scrollbar-width: none;
     -ms-overflow-style: none;
 }
@@ -29,12 +27,14 @@
 .leftImageDisplay {
     grid-column: 1;
     grid-row: 1;
+    padding-right: 10px;
     border-right: 1px solid black;
 }
 
 .rightImageDisplay {
     grid-column: 2;
     grid-row: 1;
+    padding-left: 10px;
 }
 
 .leftImageDisplay > *,
