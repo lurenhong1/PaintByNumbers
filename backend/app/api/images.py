@@ -17,7 +17,9 @@ async def process_image(
         image: Annotated[UploadFile, File()],
         color_count: Annotated[int, Form(alias="colorCount")],
         median_filter_size: Annotated[int, Form(alias="medianFilterSize")],
-        merge_area: Annotated[int, Form(alias="mergeArea")]
+        merge_area: Annotated[int, Form(alias="mergeArea")],
+        output_width: Annotated[int, Form(alias="outputWidth")],
+        output_height: Annotated[int, Form(alias="outputHeight")],
 ):
     image_bytes = await image.read()
 
@@ -29,9 +31,11 @@ async def process_image(
 
     try:
         template_bytes, reference_bytes, color_keys = process(image_bytes,
-                                                             color_count=color_count,
-                                                             median_filter_size=median_filter_size,
-                                                             merge_area=merge_area)
+                                                              color_count=color_count,
+                                                              median_filter_size=median_filter_size,
+                                                              merge_area=merge_area,
+                                                              output_dimension=(output_width, output_height)
+                                                              )
         return {
             "templateImage": base64.b64encode(template_bytes).decode("ascii"),
             "referenceImage": base64.b64encode(reference_bytes).decode("ascii"),

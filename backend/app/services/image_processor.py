@@ -11,8 +11,14 @@ import numpy as np
 
 import cv2
 
-def process(image_bytes: bytes, color_count: int = 12, median_filter_size: int = 7, merge_area = 200) -> tuple[bytes, bytes, list[tuple[int, tuple[int, int, int]]]]:
-    reference_image = reduce_colors(image_bytes, color_count, median_filter_size, merge_area)
+def process(
+        image_bytes: bytes,
+        color_count: int = 12,
+        median_filter_size: int = 7,
+        merge_area: int = 200,
+        output_dimension: tuple[int, int] | None = None
+) -> tuple[bytes, bytes, list[tuple[int, tuple[int, int, int]]]]:
+    reference_image = reduce_colors(image_bytes, color_count, median_filter_size, merge_area, output_dimension)
     color_keys, locations = locate_numbers(reference_image)
 
     boundary = find_boundary(reference_image)
@@ -33,9 +39,31 @@ def process(image_bytes: bytes, color_count: int = 12, median_filter_size: int =
 
     return template_buffer.getvalue(), reference_buffer.getvalue(), color_keys
 
-def reduce_colors(image_bytes: bytes, color_count: int = 12, median_filter_size: int = 7, merge_area = 200) -> Image.Image:
-    if not (2 <= color_count <= 50 and median_filter_size % 2 == 1):
+MAX_OUTPUT_PIXELS = 4096
+
+
+def validate_output_size(output_size: tuple[int, int],) -> None:
+    width, height = output_size
+
+    if not (1 <= width <= MAX_OUTPUT_PIXELS and 1 <= height <= MAX_OUTPUT_PIXELS):
+        raise ValueError(
+            "Output width and height must be between 1 and 4096"
+        )
+
+def reduce_colors(
+        image_bytes: bytes,
+        color_count: int = 12,
+        median_filter_size: int = 7,
+        merge_area: int = 200,
+        output_dimension: tuple[int, int] | None = None,
+) -> Image.Image:
+    if output_dimension is not None:
+        validate_output_size(output_dimension)
+    if not (2 <= color_count <= 50):
         raise ValueError("color_count must be between 2 and 50")
+    if not (median_filter_size % 2 == 1):
+        raise ValueError("median_filter_size must be odd")
+
     try:
         with Image.open(BytesIO(image_bytes)) as image:
             image.load()
@@ -54,6 +82,12 @@ def reduce_colors(image_bytes: bytes, color_count: int = 12, median_filter_size:
                 white_background,
                 rgba_image,
             ).convert("RGB")
+
+            if output_dimension is not None:
+                normalized_image = normalized_image.resize(
+                    output_dimension,
+                    resample=Image.Resampling.LANCZOS
+                )
 
             smoothed_image = normalized_image.filter(ImageFilter.MedianFilter(size=median_filter_size))
 
