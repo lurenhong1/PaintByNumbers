@@ -15,7 +15,7 @@
     min-height: 0;
     overflow-y: auto;
     gap: 10px;
-    justify-content: center;
+    justify-content: safe center;
 
     scrollbar-width: none;
     -ms-overflow-style: none;
