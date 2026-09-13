@@ -3,20 +3,20 @@ import ReactCrop, {
     centerCrop, convertToPixelCrop, cropToCanvas,
     makeAspectCrop,
     type PercentCrop
-} from 'react-image-crop'
-import 'react-image-crop/dist/ReactCrop.css'
-import './ImageCropModal.css'
+} from 'react-image-crop';
+import 'react-image-crop/dist/ReactCrop.css';
+import './ImageCropModal.css';
 
 type ImageCropModalProps = {
-    imageUrl: string
-    aspectRatio: number | undefined
-    onAspectRatioChange: (ratio: number | undefined) => void
-    onApply: (croppedImage: Blob) => void
-    onCancel: () => void
-}
+    imageUrl: string;
+    aspectRatio: number | undefined;
+    onAspectRatioChange: (ratio: number | undefined) => void;
+    onApply: (croppedImage: Blob) => void;
+    onCancel: () => void;
+};
 
 function ImageCropModal({imageUrl, aspectRatio, onAspectRatioChange, onApply, onCancel}: ImageCropModalProps) {
-    const imageRef = useRef<HTMLImageElement>(null)
+    const imageRef = useRef<HTMLImageElement>(null);
 
     const [crop, setCrop] = useState<PercentCrop>({
         unit: '%',
@@ -24,24 +24,24 @@ function ImageCropModal({imageUrl, aspectRatio, onAspectRatioChange, onApply, on
         y: 10,
         width: 80,
         height: 80,
-    })
+    });
 
     useEffect(() => {
         function handleKeyDown(event: KeyboardEvent) {
             if (event.key === 'Escape') {
-                onCancel()
+                onCancel();
             }
         }
 
-        window.addEventListener('keydown', handleKeyDown)
+        window.addEventListener('keydown', handleKeyDown);
 
         return () => {
-            window.removeEventListener('keydown', handleKeyDown)
-        }
-    }, [onCancel])
+            window.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [onCancel]);
 
     function createCenteredCrop(image: HTMLImageElement, aspect: number): PercentCrop {
-        const { naturalWidth, naturalHeight } = image
+        const { naturalWidth, naturalHeight } = image;
 
         return centerCrop(
             makeAspectCrop(
@@ -55,54 +55,54 @@ function ImageCropModal({imageUrl, aspectRatio, onAspectRatioChange, onApply, on
             ),
             naturalWidth,
             naturalHeight
-        )
+        );
     }
 
     function handleImageLoad(event: React.SyntheticEvent<HTMLImageElement>) {
         if (aspectRatio === undefined) {
-            return
+            return;
         }
-        setCrop(createCenteredCrop(event.currentTarget, aspectRatio))
+        setCrop(createCenteredCrop(event.currentTarget, aspectRatio));
     }
 
     function handleAspectRatioChange(value: string) {
-        const nextAspect = value === 'free' ? undefined : Number(value)
+        const nextAspect = value === 'free' ? undefined : Number(value);
 
-        onAspectRatioChange(nextAspect)
+        onAspectRatioChange(nextAspect);
 
         if (nextAspect !== undefined && imageRef.current) {
-            setCrop(createCenteredCrop(imageRef.current, nextAspect))
+            setCrop(createCenteredCrop(imageRef.current, nextAspect));
         }
     }
 
     async function handleApply() {
-        const image = imageRef.current
+        const image = imageRef.current;
 
         if (!image) {
-            return
+            return;
         }
 
         const pixelCrop = convertToPixelCrop(
             crop,
             image.width,
             image.height
-        )
+        );
 
-        const canvas = document.createElement('canvas')
+        const canvas = document.createElement('canvas');
 
-        await cropToCanvas(image, canvas, pixelCrop)
+        await cropToCanvas(image, canvas, pixelCrop);
 
         const blob = await new Promise<Blob>((resolve, reject) => {
             canvas.toBlob((result) => {
                 if (result) {
-                    resolve(result)
+                    resolve(result);
                 } else {
-                    reject(new Error('Failed to create cropped image'))
+                    reject(new Error('Failed to create cropped image'));
                 }
             }, 'image/png')
-        })
+        });
 
-        await onApply(blob)
+        await onApply(blob);
     }
 
     return (
@@ -154,7 +154,7 @@ function ImageCropModal({imageUrl, aspectRatio, onAspectRatioChange, onApply, on
                         <select
                             value={aspectRatio ?? 'free'}
                             onChange={(event) => {
-                                handleAspectRatioChange(event.currentTarget.value)
+                                handleAspectRatioChange(event.currentTarget.value);
                             }}
                         >
                             <option value="free">Free</option>
@@ -180,7 +180,7 @@ function ImageCropModal({imageUrl, aspectRatio, onAspectRatioChange, onApply, on
                 </footer>
             </section>
         </div>
-    )
+    );
 }
 
-export default ImageCropModal
+export default ImageCropModal;

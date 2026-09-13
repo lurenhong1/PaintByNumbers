@@ -1,0 +1,134 @@
+.imageDisplayWindow {
+    min-height: 0;
+    overflow: hidden;
+    box-sizing: border-box;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    padding-top: 10px;
+    background-color: #dfdfdf;
+    border-radius: 10px;
+}
+
+.leftImageDisplay,
+.rightImageDisplay {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow-y: auto;
+    gap: 10px;
+    padding-inline: 10px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.leftImageDisplay::-webkit-scrollbar,
+.rightImageDisplay::-webkit-scrollbar {
+    display: none;
+}
+
+.leftImageDisplay {
+    grid-column: 1;
+    grid-row: 1;
+    border-right: 1px solid black;
+}
+
+.rightImageDisplay {
+    grid-column: 2;
+    grid-row: 1;
+}
+
+.leftImageDisplay > *,
+.rightImageDisplay > * {
+    flex-shrink: 0;
+}
+
+.colorSets {
+    display: grid;
+    grid-template-columns: max-content 24px minmax(0, 1fr) 24px;
+    align-items: center;
+    column-gap: 12px;
+    row-gap: 8px;
+}
+
+.colorInfo {
+    display: contents;
+}
+
+.colorNumber {
+    justify-self: end;
+}
+
+.colorFormation {
+    text-align: left;
+}
+
+.sliderControl {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    align-items: center;
+    column-gap: 12px;
+    row-gap: 8px;
+}
+
+.slider {
+    display: grid;
+    grid-template-columns: 3ch 180px 3ch;
+    align-items: center;
+    justify-self: end;
+    gap: 5px;
+}
+
+.slider span:first-child {
+    text-align: right;
+}
+
+.slider input[type="range"] {
+    width: 100%;
+    margin: 0;
+}
+
+.image {
+    display: block;
+    width: 100%;
+    height: auto;
+    min-width: 100px;
+}
+
+.scroll-hint {
+    align-self: end;
+    justify-self: center;
+    margin-bottom: 20px;
+    pointer-events: none;
+
+    background-color: rgb(17 24 39 / 92%);
+    border: 2px solid #ffffff;
+    color: #ffffff;
+
+    width: 40px;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    z-index: 10;
+    animation: bounce 1.4s infinite;
+}
+
+.scroll-hint-left {
+    grid-column: 1;
+    grid-row: 1;
+}
+
+.scroll-hint-right {
+    grid-column: 2;
+    grid-row: 1;
+}
+
+.scroll-hint.hidden {
+    opacity: 0;
+}
+
+@keyframes bounce {
+    50% { transform: translateY(6px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .scroll-hint { animation: none; }
+}
