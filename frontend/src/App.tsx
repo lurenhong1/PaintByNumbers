@@ -21,11 +21,11 @@ function App() {
   const [processMessage, setProcessMessage] = useState<string>('');
 
   const [colorCount, setColorCount] = useState<number>(20);
-  const [medianFilterSize, setMedianFilterSize] = useState<number>(7);
-  const [mergeArea, setMergeArea] = useState<number>(500);
+  const [filterLevel, setFilterLevel] = useState<number>(3);
+  const [mergeLevel, setMergeLevel] = useState<number>(5);
 
   const [aspectRatio, setAspectRatio] = useState<number | undefined>();
-  const [outputDimension, setOutputDimension] = useState<Dimensions>({ width: 1, height: 1});
+  const [outputDimension, setOutputDimension] = useState<Dimensions>({ width: 1000, height: 1000});
 
   function handleImageSelected(selectedImage: File) {
     setImageFile(selectedImage);
@@ -49,8 +49,8 @@ function App() {
     try {
       const result = await processImage(imageFile, {
         colorCount,
-        medianFilterSize,
-        mergeArea,
+        filterLevel,
+        mergeLevel,
         outputDimension
       });
 
@@ -128,13 +128,13 @@ function App() {
             isProcessing={isProcessing}
             settings={{
               colorCount,
-              medianFilterSize,
-              mergeArea,
+              filterLevel,
+              mergeLevel,
               outputDimension
             }}
             onColorCountChange={setColorCount}
-            onMedianFilterSizeChange={setMedianFilterSize}
-            onMergeAreaChange={setMergeArea}
+            onFilterLevelChange={setFilterLevel}
+            onMergeLevelChange={setMergeLevel}
             onOutputDimensionChange={setOutputDimension}
             onOpenCrop={() => setIsCropModalOpen(true)}
         />

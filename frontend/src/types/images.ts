@@ -28,8 +28,8 @@ export type ColorRecipeResponse = {
 
 export type ProcessSettings = {
     colorCount: number;
-    medianFilterSize: number;
-    mergeArea: number;
+    filterLevel: number;
+    mergeLevel: number;
     outputDimension: Dimensions;
 };
 

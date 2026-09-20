@@ -3,6 +3,7 @@
 Keep image algorithms independent of FastAPI so they can be unit tested
 without starting a web server.
 """
+import math
 from io import BytesIO
 
 from PIL import Image, ImageOps, UnidentifiedImageError, ImageFilter, ImageDraw, ImageFont
@@ -11,14 +12,19 @@ import numpy as np
 
 import cv2
 
+REFERENCE_PIXELS = 1_000_000
+BASE_FILTER_RADIUS = 1
+BASE_MERGE_AREA = 100
+MAX_OUTPUT_PIXELS = 4096
+
 def process(
         image_bytes: bytes,
         color_count: int = 12,
-        median_filter_size: int = 7,
-        merge_area: int = 200,
+        filter_level: int = 3,
+        merge_level: int = 5,
         output_dimension: tuple[int, int] | None = None
 ) -> tuple[bytes, bytes, list[tuple[int, tuple[int, int, int]]]]:
-    reference_image = reduce_colors(image_bytes, color_count, median_filter_size, merge_area, output_dimension)
+    reference_image = reduce_colors(image_bytes, color_count, filter_level, merge_level, output_dimension)
     color_keys, locations = locate_numbers(reference_image)
 
     boundary = find_boundary(reference_image)
@@ -39,9 +45,6 @@ def process(
 
     return template_buffer.getvalue(), reference_buffer.getvalue(), color_keys
 
-MAX_OUTPUT_PIXELS = 4096
-
-
 def validate_output_size(output_size: tuple[int, int],) -> None:
     width, height = output_size
 
@@ -53,16 +56,18 @@ def validate_output_size(output_size: tuple[int, int],) -> None:
 def reduce_colors(
         image_bytes: bytes,
         color_count: int = 12,
-        median_filter_size: int = 7,
-        merge_area: int = 200,
+        filter_level: int = 3,
+        merge_level: int = 5,
         output_dimension: tuple[int, int] | None = None,
 ) -> Image.Image:
     if output_dimension is not None:
         validate_output_size(output_dimension)
     if not (2 <= color_count <= 50):
         raise ValueError("color_count must be between 2 and 50")
-    if not (median_filter_size % 2 == 1):
-        raise ValueError("median_filter_size must be odd")
+    if not 1 <= filter_level <= 5:
+        raise ValueError("filter_level must be between 1 and 5")
+    if not 1 <= merge_level <= 10:
+        raise ValueError("merge_level must be between 1 and 10")
 
     try:
         with Image.open(BytesIO(image_bytes)) as image:
@@ -89,7 +94,15 @@ def reduce_colors(
                     resample=Image.Resampling.LANCZOS
                 )
 
-            smoothed_image = normalized_image.filter(ImageFilter.MedianFilter(size=median_filter_size))
+            width, height = normalized_image.size
+            area_ratio = (width * height) / REFERENCE_PIXELS
+            linear_ratio = math.sqrt(area_ratio)
+
+            filter_radius = max(1, round(BASE_FILTER_RADIUS * linear_ratio * filter_level))
+            effective_filter_size = min(21, 2 * filter_radius + 1)
+            effective_merge_area = max(1, round(BASE_MERGE_AREA * area_ratio * merge_level))
+
+            smoothed_image = normalized_image.filter(ImageFilter.MedianFilter(size=effective_filter_size))
 
             quantized_image = smoothed_image.quantize(
                 colors=color_count,
@@ -100,7 +113,7 @@ def reduce_colors(
 
             cleaned_image = merge_small_regions(
                 quantized_image,
-                min_area=merge_area,
+                min_area=effective_merge_area,
             )
 
             return cleaned_image

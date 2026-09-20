@@ -1,4 +1,4 @@
-import {useState} from "react";
+import { useState } from "react";
 import type {
     ColorKey,
     PaintRatios,
@@ -16,13 +16,13 @@ type ImageDisplayWindowProps = {
     isProcessing: boolean;
     settings: ProcessSettings;
     onColorCountChange: (value: number) => void;
-    onMedianFilterSizeChange: (value: number) => void;
-    onMergeAreaChange: (value: number) => void;
+    onFilterLevelChange: (value: number) => void;
+    onMergeLevelChange: (value: number) => void;
     onOutputDimensionChange: (dimension: Dimensions) => void;
     onOpenCrop: () => void;
 };
 
-function ImageDisplayWindow ({
+function ImageDisplayWindow({
     croppedImage,
     referenceImage,
     templateImage,
@@ -30,23 +30,23 @@ function ImageDisplayWindow ({
     isProcessing,
     settings,
     onColorCountChange,
-    onMedianFilterSizeChange,
-    onMergeAreaChange,
+    onFilterLevelChange,
+    onMergeLevelChange,
     onOutputDimensionChange,
     onOpenCrop
 }: ImageDisplayWindowProps) {
     const minColorCount = 2;
     const maxColorCount = 50;
-    const minFilterSize = 3;
-    const maxFilterSize = 11;
-    const minMergeArea = 100;
-    const maxMergeArea = 900;
+    const minFilterLevel = 1;
+    const maxFilterLevel = 5;
+    const minMergeLevel = 1;
+    const maxMergeLevel = 10;
     const [currentRatio, setCurrentRatio] = useState<number>(0);
 
     const hasColorKeys = colorKeys.length > 0;
     const hasAnyMix = colorKeys.some(([, , mix]) => Boolean(mix));
 
-    const { colorCount, medianFilterSize, mergeArea, outputDimension } = settings;
+    const { colorCount, filterLevel, mergeLevel, outputDimension } = settings;
 
     const {
         panelRef: leftDisplayRef,
@@ -200,36 +200,36 @@ function ImageDisplayWindow ({
                                 <span>{maxColorCount}</span>
                             </div>
 
-                            <label>Filter Size: {medianFilterSize}</label>
+                            <label>Smooth Level: {filterLevel}</label>
                             <div className="slider">
-                                <span>{minFilterSize}</span>
+                                <span>{minFilterLevel}</span>
                                 <input
                                     type="range"
-                                    min={minFilterSize}
-                                    max={maxFilterSize}
-                                    step={2}
-                                    value={medianFilterSize}
+                                    min={minFilterLevel}
+                                    max={maxFilterLevel}
+                                    step={1}
+                                    value={filterLevel}
                                     disabled={isProcessing}
                                     title="Controls image smoothness."
-                                    onChange={(e) => onMedianFilterSizeChange(e.currentTarget.valueAsNumber)}
+                                    onChange={(e) => onFilterLevelChange(e.currentTarget.valueAsNumber)}
                                 />
-                                <span>{maxFilterSize}</span>
+                                <span>{maxFilterLevel}</span>
                             </div>
 
-                            <label>Merge Area: {mergeArea}</label>
+                            <label>Merge Level: {mergeLevel}</label>
                             <div className="slider">
-                                <span>{minMergeArea}</span>
+                                <span>{minMergeLevel}</span>
                                 <input
                                     type="range"
-                                    min={minMergeArea}
-                                    max={maxMergeArea}
-                                    step={100}
-                                    value={mergeArea}
+                                    min={minMergeLevel}
+                                    max={maxMergeLevel}
+                                    step={1}
+                                    value={mergeLevel}
                                     disabled={isProcessing}
                                     title="Controls image detail."
-                                    onChange={(e) => onMergeAreaChange(e.currentTarget.valueAsNumber)}
+                                    onChange={(e) => onMergeLevelChange(e.currentTarget.valueAsNumber)}
                                 />
-                                <span>{maxMergeArea}</span>
+                                <span>{maxMergeLevel}</span>
                             </div>
                         </div>
                     </div>

@@ -16,8 +16,8 @@ router = APIRouter(
 async def process_image(
         image: Annotated[UploadFile, File()],
         color_count: Annotated[int, Form(alias="colorCount")],
-        median_filter_size: Annotated[int, Form(alias="medianFilterSize")],
-        merge_area: Annotated[int, Form(alias="mergeArea")],
+        filter_level: Annotated[int, Form(alias="filterLevel")],
+        merge_level: Annotated[int, Form(alias="mergeLevel")],
         output_width: Annotated[int, Form(alias="outputWidth")],
         output_height: Annotated[int, Form(alias="outputHeight")],
 ):
@@ -32,8 +32,8 @@ async def process_image(
     try:
         template_bytes, reference_bytes, color_keys = process(image_bytes,
                                                               color_count=color_count,
-                                                              median_filter_size=median_filter_size,
-                                                              merge_area=merge_area,
+                                                              filter_level=filter_level,
+                                                              merge_level=merge_level,
                                                               output_dimension=(output_width, output_height)
                                                               )
         return {

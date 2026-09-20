@@ -17,10 +17,10 @@ export async function processImage(
     formData.append('image', imageFile);
     formData.append('colorCount', String(settings.colorCount));
     formData.append(
-        'medianFilterSize',
-        String(settings.medianFilterSize),
+        'filterLevel',
+        String(settings.filterLevel),
     );
-    formData.append('mergeArea', String(settings.mergeArea));
+    formData.append('mergeLevel', String(settings.mergeLevel));
     formData.append('outputWidth', String(settings.outputDimension.width));
     formData.append('outputHeight', String(settings.outputDimension.height));
 
