@@ -9,18 +9,34 @@ type ToolbarProps = {
     isProcessing: boolean;
     canGenerate: boolean;
     canGetColorRecipe: boolean;
+    canDownloadReference: boolean;
+    canDownloadTemplate: boolean;
+    canDownloadColorSets: boolean;
+    canDownloadAll: boolean;
     onImageSelected: (file: File) => void;
     onGenerate: () => void;
     onGetColorRecipe: () => void;
+    onDownloadReference: () => void;
+    onDownloadTemplate: () => void;
+    onDownloadColorSets: () => void;
+    onDownloadAll: () => void;
 };
 
 function Toolbar({
     isProcessing,
     canGenerate,
     canGetColorRecipe,
+    canDownloadReference,
+    canDownloadTemplate,
+    canDownloadColorSets,
+    canDownloadAll,
     onImageSelected,
     onGenerate,
-    onGetColorRecipe
+    onGetColorRecipe,
+    onDownloadReference,
+    onDownloadTemplate,
+    onDownloadColorSets,
+    onDownloadAll
 }: ToolbarProps) {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -85,6 +101,8 @@ function Toolbar({
             <button
                 type='button'
                 className="btn"
+                onClick={onDownloadReference}
+                disabled={!canDownloadReference || isProcessing}
             >
                 Download Referenced
             </button>
@@ -92,6 +110,8 @@ function Toolbar({
             <button
                 type='button'
                 className="btn"
+                onClick={onDownloadTemplate}
+                disabled={!canDownloadTemplate || isProcessing}
             >
                 Download Template
             </button>
@@ -99,6 +119,8 @@ function Toolbar({
             <button
                 type='button'
                 className="btn"
+                onClick={onDownloadColorSets}
+                disabled={!canDownloadColorSets || isProcessing}
             >
                 Download Color Sets
             </button>
@@ -106,6 +128,8 @@ function Toolbar({
             <button
                 type='button'
                 className="btn"
+                onClick={onDownloadAll}
+                disabled={!canDownloadAll || isProcessing}
             >
                 Download All
             </button>

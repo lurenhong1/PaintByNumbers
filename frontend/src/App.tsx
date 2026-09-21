@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import JSZip from 'jszip';
+import { toPng } from 'html-to-image';
 import type { ColorKey, Dimensions } from './types/images';
 import './App.css';
 import ImageCropModal from './components/ImageCropModal/ImageCropModal.tsx';
@@ -27,12 +29,17 @@ function App() {
   const [aspectRatio, setAspectRatio] = useState<number | undefined>();
   const [outputDimension, setOutputDimension] = useState<Dimensions>({ width: 1000, height: 1000});
 
+  const colorSetsRef = useRef<HTMLDivElement>(null);
+
   function handleImageSelected(selectedImage: File) {
     setImageFile(selectedImage);
 
     const image = URL.createObjectURL(selectedImage);
 
     // console.log("Selected image:", selectedImage);
+    setReferenceImage(null);
+    setTemplateImage(null);
+    setColorKeys([]);
     setInputImage(image);
     setCroppedImage(image);
   }
@@ -44,7 +51,7 @@ function App() {
     }
 
     setIsEmptyImage(false);
-    startProcess("Image Processing");
+    startProcess("Processing image...");
 
     try {
       const result = await processImage(imageFile, {
@@ -69,7 +76,7 @@ function App() {
       return;
     }
 
-    startProcess("Generating Color Recipe");
+    startProcess("Generating color recipes...");
 
     try {
       const result = await getColorRecipes(colorKeys);
@@ -91,8 +98,108 @@ function App() {
     );
 
     setCroppedImage(URL.createObjectURL(blob));
+    setReferenceImage(null);
+    setTemplateImage(null);
+    setColorKeys([]);
     setImageFile(croppedFile);
     setIsCropModalOpen(false);
+  }
+
+  function handleDownloadImage(imageUrl: string | null, filename: string) {
+    if (!imageUrl) {
+      return;
+    }
+    startProcess(`Downloading ${filename}...`);
+    const link = document.createElement("a");
+    link.href = imageUrl;
+    link.download = filename;
+
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    endProcess();
+  }
+
+  async function handleDownloadColorSets() {
+    if (!colorSetsRef.current) {
+      return;
+    }
+    startProcess("Downloading color-sets.png...");
+    try {
+      const imageUrl = await toPng(colorSetsRef.current, {
+        backgroundColor: "#dfdfdf",
+        cacheBust: true,
+        pixelRatio: 2,
+      });
+
+      handleDownloadImage(imageUrl, "color-sets.png");
+    } catch (error) {
+      console.error("Failed to create color sets image:", error);
+    } finally {
+      endProcess();
+    }
+  }
+
+  async function imageUrlToBlob(imageUrl: string): Promise<Blob> {
+    const response = await fetch(imageUrl);
+
+    if (!response.ok) {
+      throw new Error("Could not read image");
+    }
+
+    return response.blob();
+  }
+
+  function downloadBlob(blob: Blob, filename: string): void {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = filename;
+
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    // Wait until the browser has started the download.
+    window.setTimeout(() => URL.revokeObjectURL(url), 0);
+  }
+
+  async function handleDownloadAll(): Promise<void> {
+    if (!referenceImage || !templateImage || !colorSetsRef.current) {
+      return;
+    }
+    startProcess("Preparing downloads...");
+
+    try {
+      const colorSetsImage = await toPng(colorSetsRef.current, {
+        backgroundColor: "#dfdfdf",
+        cacheBust: true,
+        pixelRatio: 2,
+      });
+
+      const [referenceBlob, templateBlob, colorSetsBlob] = await Promise.all([
+        imageUrlToBlob(referenceImage),
+        imageUrlToBlob(templateImage),
+        imageUrlToBlob(colorSetsImage)
+      ]);
+
+      const zip = new JSZip();
+
+      zip.file("reference.png", referenceBlob);
+      zip.file("template.png", templateBlob);
+      zip.file("color-sets.png", colorSetsBlob);
+
+      const zipBlob = await zip.generateAsync({
+        type: "blob",
+      });
+
+      downloadBlob(zipBlob, "paint-by-numbers.zip");
+    } catch (error) {
+      console.error("Failed to create ZIP:", error);
+    } finally {
+      endProcess();
+    }
   }
 
   function startProcess(message: string) {
@@ -116,9 +223,17 @@ function App() {
             isProcessing={isProcessing}
             canGenerate={croppedImage !== null}
             canGetColorRecipe={colorKeys.length > 0}
+            canDownloadReference={referenceImage !== null}
+            canDownloadTemplate={templateImage !== null}
+            canDownloadColorSets={colorKeys.length > 0}
+            canDownloadAll={referenceImage !== null && templateImage !== null && colorKeys.length > 0}
             onImageSelected={handleImageSelected}
             onGenerate={handleGenerate}
             onGetColorRecipe={handleGetColorRecipe}
+            onDownloadReference={() => handleDownloadImage(referenceImage, "reference.png")}
+            onDownloadTemplate={() => handleDownloadImage(templateImage, "template.png")}
+            onDownloadColorSets={handleDownloadColorSets}
+            onDownloadAll={handleDownloadAll}
         />
         <ImageDisplayWindow
             croppedImage={croppedImage}
@@ -137,10 +252,22 @@ function App() {
             onMergeLevelChange={setMergeLevel}
             onOutputDimensionChange={setOutputDimension}
             onOpenCrop={() => setIsCropModalOpen(true)}
+            colorSetsRef={colorSetsRef}
         />
 
         {isEmptyImage && (<p>Please select an image before upload.</p>)}
-        {isProcessing && (<p>{processMessage}</p>)}
+        {isProcessing && (
+            <div className="processingOverlay">
+              <div
+                  className="processingStatus"
+                  role="status"
+                  aria-busy="true"
+              >
+                <span className="loadingSpinner" aria-hidden="true" />
+                <p>{processMessage}</p>
+              </div>
+            </div>
+        )}
 
       </section>
       {isCropModalOpen && inputImage &&

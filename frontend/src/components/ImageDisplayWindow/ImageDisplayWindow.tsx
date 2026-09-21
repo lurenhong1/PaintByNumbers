@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type RefObject } from "react";
 import type {
     ColorKey,
     PaintRatios,
@@ -20,6 +20,7 @@ type ImageDisplayWindowProps = {
     onMergeLevelChange: (value: number) => void;
     onOutputDimensionChange: (dimension: Dimensions) => void;
     onOpenCrop: () => void;
+    colorSetsRef: RefObject<HTMLDivElement | null>;
 };
 
 function ImageDisplayWindow({
@@ -33,7 +34,8 @@ function ImageDisplayWindow({
     onFilterLevelChange,
     onMergeLevelChange,
     onOutputDimensionChange,
-    onOpenCrop
+    onOpenCrop,
+    colorSetsRef
 }: ImageDisplayWindowProps) {
     const minColorCount = 2;
     const maxColorCount = 50;
@@ -257,69 +259,71 @@ function ImageDisplayWindow({
                         {!hasAnyMix && (
                             <span>Generate color recipes to see the estimated mix for each color.</span>
                         )}
-                        <div className="colorSets">
-                            <div className="colorInfo colorHeader">
-                                <span>#</span>
-                                <span>Color</span>
-                                {hasAnyMix
-                                    ? (
+                        <div ref={colorSetsRef} className="colorSetsExport">
+                            <div className="colorSets">
+                                <div className="colorInfo colorHeader">
+                                    <span>#</span>
+                                    <span>Color</span>
+                                    {hasAnyMix
+                                        ? (
                                             <>
-                                            <span>Estimated Mix</span>
-                                            <span>Result</span>
-                                        </>
-                                    )
-                                    : (
-                                        <>
-                                            <span/>
-                                            <span/>
-                                        </>
-                                    )
-                                }
-                            </div>
-
-                            {colorKeys.map(([number, [red, green, blue], mix]) =>(
-                                <div className="colorInfo" key={number}>
-                                    <span className="colorNumber">{number}</span>
-                                    <span
-                                        title="Palette color."
-                                        style={{
-                                            display: "inline-block",
-                                            width: "24px",
-                                            height: "24px",
-                                            backgroundColor: `rgb(${red}, ${green}, ${blue})`,
-                                        }}
-                                    />
-                                    <span
-                                        className="colorFormation"
-                                        title={mix
-                                            ? `Predicted rgb(${mix.predictedRgb.join(", ")}); average RGB error ${mix.rgbError}`
-                                            : undefined
-                                        }
-                                    >
-                                    {mix ? formatPaintMix(mix.ratios) : null}
-                                </span>
-                                    {mix
-                                        ? <span
-                                            title="Estimated paint mix."
-                                            style={{
-                                                display: "inline-block",
-                                                width: "24px",
-                                                height: "24px",
-                                                backgroundColor: `rgb(${mix.predictedRgb[0]}, ${mix.predictedRgb[1]}, ${mix.predictedRgb[2]})`,
-                                            }}
-                                        />
-                                        : <span
-                                            aria-hidden="true"
-                                            style={{
-                                                display: "inline-block",
-                                                width: "24px",
-                                                height: "24px",
-                                                visibility: "hidden",
-                                            }}
-                                        />
+                                                <span>Estimated Mix</span>
+                                                <span>Result</span>
+                                            </>
+                                        )
+                                        : (
+                                            <>
+                                                <span/>
+                                                <span/>
+                                            </>
+                                        )
                                     }
                                 </div>
-                            ))}
+
+                                {colorKeys.map(([number, [red, green, blue], mix]) =>(
+                                    <div className="colorInfo" key={number}>
+                                        <span className="colorNumber">{number}</span>
+                                        <span
+                                            title="Palette color."
+                                            style={{
+                                                display: "inline-block",
+                                                width: "24px",
+                                                height: "24px",
+                                                backgroundColor: `rgb(${red}, ${green}, ${blue})`,
+                                            }}
+                                        />
+                                        <span
+                                            className="colorFormation"
+                                            title={mix
+                                                ? `Predicted rgb(${mix.predictedRgb.join(", ")}); average RGB error ${mix.rgbError}`
+                                                : undefined
+                                            }
+                                        >
+                                    {mix ? formatPaintMix(mix.ratios) : null}
+                                </span>
+                                        {mix
+                                            ? <span
+                                                title="Estimated paint mix."
+                                                style={{
+                                                    display: "inline-block",
+                                                    width: "24px",
+                                                    height: "24px",
+                                                    backgroundColor: `rgb(${mix.predictedRgb[0]}, ${mix.predictedRgb[1]}, ${mix.predictedRgb[2]})`,
+                                                }}
+                                            />
+                                            : <span
+                                                aria-hidden="true"
+                                                style={{
+                                                    display: "inline-block",
+                                                    width: "24px",
+                                                    height: "24px",
+                                                    visibility: "hidden",
+                                                }}
+                                            />
+                                        }
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     </div>
                 }

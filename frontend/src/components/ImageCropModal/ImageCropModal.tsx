@@ -99,7 +99,7 @@ function ImageCropModal({imageUrl, aspectRatio, onAspectRatioChange, onApply, on
                 } else {
                     reject(new Error('Failed to create cropped image'));
                 }
-            }, 'image/png')
+            }, 'image/png');
         });
 
         await onApply(blob);

@@ -162,3 +162,10 @@
     -webkit-appearance: none;
     margin: 0;
 }
+
+.colorSetsExport {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 20px;
+    background-color: #dfdfdf;
+}
