@@ -43,12 +43,18 @@ function ImageDisplayWindow({
     const maxFilterLevel = 5;
     const minMergeLevel = 1;
     const maxMergeLevel = 10;
+
+    const { colorCount, filterLevel, mergeLevel, outputDimension } = settings;
     const [currentRatio, setCurrentRatio] = useState<number>(0);
+    const [widthText, setWidthText] = useState(
+        String(outputDimension.width),
+    );
+    const [heightText, setHeightText] = useState(
+        String(outputDimension.height),
+    );
 
     const hasColorKeys = colorKeys.length > 0;
     const hasAnyMix = colorKeys.some(([, , mix]) => Boolean(mix));
-
-    const { colorCount, filterLevel, mergeLevel, outputDimension } = settings;
 
     const {
         panelRef: leftDisplayRef,
@@ -69,29 +75,69 @@ function ImageDisplayWindow({
             .join(" · ");
     }
 
-    const MIN_OUTPUT_PIXELS = 1;
+    const MIN_OUTPUT_PIXELS = 500;
     const MAX_OUTPUT_PIXELS = 4096;
 
-    function fitWithinMaximum(
-        width: number,
-        height: number,
-    ): Dimensions {
-        const scale = Math.min(
-            1,
+    function fitWithinBounds(width: number, height: number): Dimensions {
+        if (width <= 0 || height <= 0) {
+            return outputDimension;
+        }
+
+        const minimumScale = Math.max(
+            MIN_OUTPUT_PIXELS / width,
+            MIN_OUTPUT_PIXELS / height,
+        );
+
+        const maximumScale = Math.min(
             MAX_OUTPUT_PIXELS / width,
             MAX_OUTPUT_PIXELS / height,
         );
 
+        const scale = Math.min(
+            maximumScale,
+            Math.max(minimumScale, 1),
+        );
+
         return {
-            width: Math.max(
-                MIN_OUTPUT_PIXELS,
-                Math.round(width * scale),
-            ),
-            height: Math.max(
-                MIN_OUTPUT_PIXELS,
-                Math.round(height * scale),
-            ),
+            width: Math.round(width * scale),
+            height: Math.round(height * scale),
         };
+    }
+
+    function commitWidth() {
+        const width = Number(widthText);
+
+        if (widthText.trim() === "" || !Number.isFinite(width) || currentRatio <= 0) {
+            setWidthText(String(outputDimension.width));
+            return;
+        }
+
+        const dimensions = fitWithinBounds(
+            width,
+            width / currentRatio,
+        );
+
+        setWidthText(String(dimensions.width));
+        setHeightText(String(dimensions.height));
+        onOutputDimensionChange(dimensions);
+    }
+
+    function commitHeight() {
+        const height = Number(heightText);
+
+        if (heightText.trim() === "" || !Number.isFinite(height) || currentRatio <= 0) {
+            setHeightText(String(outputDimension.height));
+            return;
+        }
+
+        const dimensions = fitWithinBounds(
+            height * currentRatio,
+            height,
+        );
+
+        setWidthText(String(dimensions.width));
+        setHeightText(String(dimensions.height));
+        onOutputDimensionChange(dimensions);
     }
 
     return (
@@ -109,14 +155,22 @@ function ImageDisplayWindow({
                             alt="Input image preview"
                             className="image"
                             onLoad={(event) => {
-                                const { naturalWidth, naturalHeight } = event.currentTarget;
-                                const ratio = naturalWidth / naturalHeight;
+                                const {
+                                    naturalWidth,
+                                    naturalHeight,
+                                } = event.currentTarget;
 
+                                const ratio = naturalWidth / naturalHeight;
                                 setCurrentRatio(ratio);
 
-                                onOutputDimensionChange(
-                                    fitWithinMaximum(naturalWidth, naturalHeight),
+                                const dimensions = fitWithinBounds(
+                                    naturalWidth,
+                                    naturalHeight,
                                 );
+
+                                setWidthText(String(dimensions.width));
+                                setHeightText(String(dimensions.height));
+                                onOutputDimensionChange(dimensions);
                             }}
                         />
                         <button
@@ -133,55 +187,33 @@ function ImageDisplayWindow({
                             <span>Output Dimension: </span>
                             <input
                                 type="number"
+                                value={widthText}
                                 min={MIN_OUTPUT_PIXELS}
                                 max={MAX_OUTPUT_PIXELS}
                                 step={1}
-                                value={outputDimension.width}
-                                onChange={(event) => {
-                                    const width = event.currentTarget.valueAsNumber;
-
-                                    if (!Number.isFinite(width) || currentRatio <= 0) {
-                                        return;
+                                onChange={(event) => setWidthText(event.currentTarget.value)}
+                                onBlur={commitWidth}
+                                onKeyDown={(event) => {
+                                    if (event.key === "Enter") {
+                                        event.preventDefault();
+                                        event.currentTarget.blur();
                                     }
-
-                                    const clampedWidth = Math.min(
-                                        MAX_OUTPUT_PIXELS,
-                                        Math.max(MIN_OUTPUT_PIXELS, Math.round(width)),
-                                    );
-
-                                    onOutputDimensionChange(
-                                        fitWithinMaximum(
-                                            clampedWidth,
-                                            clampedWidth / currentRatio,
-                                        ),
-                                    );
                                 }}
                             />
                             :
                             <input
                                 type="number"
+                                value={heightText}
                                 min={MIN_OUTPUT_PIXELS}
                                 max={MAX_OUTPUT_PIXELS}
                                 step={1}
-                                value={outputDimension.height}
-                                onChange={(event) => {
-                                    const height = event.currentTarget.valueAsNumber;
-
-                                    if (!Number.isFinite(height) || currentRatio <= 0) {
-                                        return;
+                                onChange={(event) => setHeightText(event.currentTarget.value)}
+                                onBlur={commitHeight}
+                                onKeyDown={(event) => {
+                                    if (event.key === "Enter") {
+                                        event.preventDefault();
+                                        event.currentTarget.blur();
                                     }
-
-                                    const clampedHeight = Math.min(
-                                        MAX_OUTPUT_PIXELS,
-                                        Math.max(MIN_OUTPUT_PIXELS, Math.round(height)),
-                                    );
-
-                                    onOutputDimensionChange(
-                                        fitWithinMaximum(
-                                            clampedHeight * currentRatio,
-                                            clampedHeight,
-                                        ),
-                                    );
                                 }}
                             />
                         </div>
