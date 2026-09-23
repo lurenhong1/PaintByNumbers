@@ -18,9 +18,6 @@ BASE_MERGE_AREA = 100
 MAX_OUTPUT_PIXELS = 4096
 
 ONE_CHAR_FONT_BY_SIDE = {
-    5: 7,
-    6: 9,
-    7: 9,
     8: 11,
     9: 13,
     10: 15,
@@ -36,11 +33,6 @@ ONE_CHAR_FONT_BY_SIDE = {
 }
 
 TWO_CHAR_FONT_BY_SIDE = {
-    9: 7,
-    10: 9,
-    11: 9,
-    12: 10,
-    13: 11,
     14: 11,
     15: 12,
     16: 13,
@@ -268,13 +260,13 @@ def find_boundary(image: Image.Image) -> np.ndarray:
             color_labels[:, 1:] != color_labels[:, :-1]
     )
     boundaries[:, 1:] |= vertical_changes
-    boundaries[:, :-1] |= vertical_changes
+    # boundaries[:, :-1] |= vertical_changes
 
     horizontal_changes = (
             color_labels[1:, :] != color_labels[:-1, :]
     )
     boundaries[1:, :] |= horizontal_changes
-    boundaries[:-1, :] |= horizontal_changes
+    # boundaries[:-1, :] |= horizontal_changes
 
     return boundaries
 
@@ -341,10 +333,10 @@ def locate_numbers(image: Image.Image) -> tuple[list[tuple[int, tuple[int, int, 
 
             fit_side = int(math.floor(math.sqrt(2) * max_radius))
             if color_number < 10:
-                fit_side = max(5, min(fit_side, 19))
+                fit_side = max(8, min(fit_side, 19))
                 font_size = ONE_CHAR_FONT_BY_SIDE[fit_side]
             else:
-                fit_side = max(9, min(fit_side, 32))
+                fit_side = max(14, min(fit_side, 32))
                 font_size = TWO_CHAR_FONT_BY_SIDE[fit_side]
 
             locations.append((float(x), float(y), color_number, font_size))

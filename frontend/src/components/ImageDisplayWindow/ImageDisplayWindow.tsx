@@ -75,7 +75,7 @@ function ImageDisplayWindow({
             .join(" · ");
     }
 
-    const MIN_OUTPUT_PIXELS = 500;
+    const MIN_OUTPUT_PIXELS = 1000;
     const MAX_OUTPUT_PIXELS = 4096;
 
     function fitWithinBounds(width: number, height: number): Dimensions {
