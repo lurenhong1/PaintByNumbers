@@ -17,6 +17,51 @@ BASE_FILTER_RADIUS = 1
 BASE_MERGE_AREA = 100
 MAX_OUTPUT_PIXELS = 4096
 
+ONE_CHAR_FONT_BY_SIDE = {
+    5: 7,
+    6: 9,
+    7: 9,
+    8: 11,
+    9: 13,
+    10: 15,
+    11: 17,
+    12: 17,
+    13: 19,
+    14: 20,
+    15: 22,
+    16: 24,
+    17: 24,
+    18: 26,
+    19: 27,
+}
+
+TWO_CHAR_FONT_BY_SIDE = {
+    9: 7,
+    10: 9,
+    11: 9,
+    12: 10,
+    13: 11,
+    14: 11,
+    15: 12,
+    16: 13,
+    17: 14,
+    18: 16,
+    19: 16,
+    20: 18,
+    21: 18,
+    22: 19,
+    23: 19,
+    24: 21,
+    25: 21,
+    26: 23,
+    27: 23,
+    28: 24,
+    29: 24,
+    30: 26,
+    31: 26,
+    32: 27,
+}
+
 def process(
         image_bytes: bytes,
         color_count: int = 12,
@@ -239,10 +284,8 @@ def draw_numbers(image: Image.Image, locations: list[tuple[float, float, int]]) 
 
     draw = ImageDraw.Draw(numbered_image)
 
-    font = ImageFont.load_default(size=7)
-
-    for x, y, number in locations:
-        draw.text((x, y), str(number), fill=(0, 0, 0), font=font, anchor="mm")
+    for x, y, number, font_size in locations:
+        draw.text((x, y), str(number), fill=(0, 0, 0), font=ImageFont.load_default(font_size), anchor="mm")
 
     return numbered_image
 
@@ -290,12 +333,20 @@ def locate_numbers(image: Image.Image) -> tuple[list[tuple[int, tuple[int, int, 
 
             distance_map = cv2.distanceTransform(padded_mask, cv2.DIST_L2, 5)
 
-            _, _, _, maximum_location = cv2.minMaxLoc(distance_map)
+            _, max_radius, _, maximum_location = cv2.minMaxLoc(distance_map)
             padded_x, padded_y = maximum_location
 
             x = left + padded_x - 1
             y = top + padded_y - 1
 
-            locations.append((float(x), float(y), color_number))
+            fit_side = int(math.floor(math.sqrt(2) * max_radius))
+            if color_number < 10:
+                fit_side = max(5, min(fit_side, 19))
+                font_size = ONE_CHAR_FONT_BY_SIDE[fit_side]
+            else:
+                fit_side = max(9, min(fit_side, 32))
+                font_size = TWO_CHAR_FONT_BY_SIDE[fit_side]
+
+            locations.append((float(x), float(y), color_number, font_size))
 
     return color_keys, locations
