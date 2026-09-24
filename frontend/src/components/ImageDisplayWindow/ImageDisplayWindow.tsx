@@ -141,8 +141,14 @@ function ImageDisplayWindow({
     }
 
     return (
-        <div className="imageDisplayWindow">
-            <div ref={leftDisplayRef} className="leftImageDisplay">
+        <div className="image-display-window">
+            <div ref={leftDisplayRef} className="left-image-display">
+                {!croppedImage && (
+                    <div className="empty-state">
+                        <strong>Start with a favorite image</strong>
+                        <span>Upload a photo to configure your paint-by-numbers design.</span>
+                    </div>
+                )}
                 {croppedImage && (
                     <div style={{
                         display: "flex",
@@ -183,7 +189,7 @@ function ImageDisplayWindow({
                         {currentRatio &&
                             <span>Current Ratio: {currentRatio.toFixed(2)}</span>
                         }
-                        <div className="dimensionControl">
+                        <div className="dimension-control">
                             <span>Output Dimension: </span>
                             <input
                                 type="number"
@@ -217,7 +223,7 @@ function ImageDisplayWindow({
                                 }}
                             />
                         </div>
-                        <div className="sliderControl">
+                        <div className="slider-control">
                             <label>Color Count: {colorCount}</label>
                             <div className="slider">
                                 <span>{minColorCount}</span>
@@ -269,7 +275,13 @@ function ImageDisplayWindow({
                     </div>
                 )}
             </div>
-            <div ref={rightDisplayRef} className="rightImageDisplay">
+            <div ref={rightDisplayRef} className="right-image-display">
+                {!referenceImage && !templateImage && (
+                    <div className="empty-state">
+                        <strong>Your artwork will appear here</strong>
+                        <span>Adjust the settings, then select Generate.</span>
+                    </div>
+                )}
                 {referenceImage && (
                     <img
                         src={referenceImage}
@@ -291,9 +303,9 @@ function ImageDisplayWindow({
                         {!hasAnyMix && (
                             <span>Generate color recipes to see the estimated mix for each color.</span>
                         )}
-                        <div ref={colorSetsRef} className="colorSetsExport">
-                            <div className="colorSets">
-                                <div className="colorInfo colorHeader">
+                        <div ref={colorSetsRef} className="color-sets-export">
+                            <div className="color-sets">
+                                <div className="color-info color-header">
                                     <span>#</span>
                                     <span>Color</span>
                                     {hasAnyMix
@@ -313,8 +325,8 @@ function ImageDisplayWindow({
                                 </div>
 
                                 {colorKeys.map(([number, [red, green, blue], mix]) =>(
-                                    <div className="colorInfo" key={number}>
-                                        <span className="colorNumber">{number}</span>
+                                    <div className="color-info" key={number}>
+                                        <span className="color-number">{number}</span>
                                         <span
                                             title="Palette color."
                                             style={{
@@ -325,7 +337,7 @@ function ImageDisplayWindow({
                                             }}
                                         />
                                         <span
-                                            className="colorFormation"
+                                            className="color-formation"
                                             title={mix
                                                 ? `Predicted rgb(${mix.predictedRgb.join(", ")}); average RGB error ${mix.rgbError}`
                                                 : undefined

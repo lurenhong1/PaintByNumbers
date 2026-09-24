@@ -257,13 +257,13 @@ function App() {
 
         {isEmptyImage && (<p>Please select an image before upload.</p>)}
         {isProcessing && (
-            <div className="processingOverlay">
+            <div className="processing-overlay">
               <div
-                  className="processingStatus"
+                  className="processing-status"
                   role="status"
                   aria-busy="true"
               >
-                <span className="loadingSpinner" aria-hidden="true" />
+                <span className="loading-spinner" aria-hidden="true" />
                 <p>{processMessage}</p>
               </div>
             </div>

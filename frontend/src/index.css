@@ -1,3 +1,14 @@
+:root {
+  --canvas: #f6f2ea;
+  --surface: #ffffff;
+  --surface-soft: #eee8dc;
+  --text: #252521;
+  --text-muted: #716d65;
+  --border: #d8d1c4;
+  --primary: #2a7f76;
+  --focus: #f2b84b;
+}
+
 #root {
   height: 100dvh;
   min-height: 600px;
@@ -8,6 +19,8 @@
 body {
   margin: 0;
   overflow: hidden;
+  color: var(--text);
+  background: var(--canvas);
   font-family: system-ui, "Segoe UI", sans-serif;
 }
 
@@ -20,11 +33,36 @@ select {
 .btn {
   display: inline-flex;
   box-sizing: border-box;
-  width: fit-content;
   min-width: 70px;
   min-height: 40px;
   align-items: center;
   justify-content: center;
   border-radius: 10px;
   padding: 10px;
+  color: var(--text);
+  background: var(--surface);
+  cursor: pointer;
+  transition:
+          transform 150ms ease,
+          box-shadow 150ms ease;
+}
+
+
+.btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgb(37 37 33 / 12%);
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.btn:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--focus) 55%, transparent);
+  outline-offset: 2px;
+}
+
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
 }

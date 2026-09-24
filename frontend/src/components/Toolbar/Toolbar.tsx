@@ -104,7 +104,7 @@ function Toolbar({
                 onClick={onDownloadReference}
                 disabled={!canDownloadReference || isProcessing}
             >
-                Download Referenced
+                Download Reference
             </button>
 
             <button
