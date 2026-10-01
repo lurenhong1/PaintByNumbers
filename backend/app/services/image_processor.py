@@ -5,12 +5,10 @@ without starting a web server.
 """
 import math
 from io import BytesIO
-
 from PIL import Image, ImageOps, UnidentifiedImageError, ImageFilter, ImageDraw, ImageFont
-
 import numpy as np
-
 import cv2
+from app.services.thin_space_remover import remove_short_runs
 
 REFERENCE_PIXELS = 1_000_000
 BASE_FILTER_RADIUS = 1
@@ -53,6 +51,11 @@ TWO_CHAR_FONT_BY_SIDE = {
     31: 26,
     32: 27,
 }
+
+OUTPUT_PPI = 300
+MIN_BRUSH_WIDTH_MM = 1.0
+
+MIN_RUN_LENGTH = math.ceil(MIN_BRUSH_WIDTH_MM * OUTPUT_PPI / 25.4)
 
 def process(
         image_bytes: bytes,
@@ -148,12 +151,14 @@ def reduce_colors(
                 dither=Image.Dither.NONE,
             )
 
-            cleaned_image = merge_small_regions(
+            region_cleaned_image = merge_small_regions(
                 quantized_image,
                 min_area=effective_merge_area,
             )
 
-            return cleaned_image
+            run_cleaned_image = remove_short_runs(region_cleaned_image, MIN_RUN_LENGTH)
+
+            return run_cleaned_image
 
     except (UnidentifiedImageError, OSError) as error:
         raise ValueError("The uploaded file is not a valid image") from error
