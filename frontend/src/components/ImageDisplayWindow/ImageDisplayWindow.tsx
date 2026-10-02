@@ -1,9 +1,11 @@
-import { useState, type RefObject } from "react";
+import {useState, type RefObject, useEffect} from "react";
 import type {
     ColorKey,
     PaintRatios,
     ProcessSettings,
-    Dimensions
+    Dimensions,
+    UnitOfLength,
+    PaperName
 } from "../../types/images.ts";
 import useScrollHint from "../../hooks/useScrollHint.ts";
 import "./ImageDisplayWindow.css";
@@ -46,12 +48,33 @@ function ImageDisplayWindow({
 
     const { colorCount, filterLevel, mergeLevel, outputDimension } = settings;
     const [currentRatio, setCurrentRatio] = useState<number>(0);
-    const [widthText, setWidthText] = useState(
-        String(outputDimension.width),
-    );
-    const [heightText, setHeightText] = useState(
-        String(outputDimension.height),
-    );
+    const [paperName, setPaperName] = useState<PaperName>('Letter')
+    const [widthText, setWidthText] = useState("8.5");
+    const [heightText, setHeightText] = useState("11");
+    const [PPI, setPPI] = useState<string>("300");
+    const [paperRatioUnit, setPaperRatioUnit] = useState<UnitOfLength>('in')
+
+    const PAPER_SIZES_INCHES = {
+        A5: { width: "5.83", height: "8.27" },
+        A4: { width: "8.27", height: "11.69" },
+        A3: { width: "11.69", height: "16.54" },
+        A2: { width: "16.54", height: "23.39" },
+
+        Letter: { width: "8.5", height: "11" },
+        Legal: { width: "8.5", height: "14" },
+        Tabloid: { width: "11", height: "17" },
+    } as const;
+
+    const PAPER_SIZES_CM = {
+        A5: { width: "14.8", height: "21" },
+        A4: { width: "21", height: "29.7" },
+        A3: { width: "29.7", height: "42" },
+        A2: { width: "42", height: "59.4" },
+
+        Letter: { width: "21.59", height: "27.94" },
+        Legal: { width: "21.59", height: "35.56" },
+        Tabloid: { width: "27.94", height: "43.18" },
+    } as const;
 
     const hasColorKeys = colorKeys.length > 0;
     const hasAnyMix = colorKeys.some(([, , mix]) => Boolean(mix));
@@ -75,70 +98,44 @@ function ImageDisplayWindow({
             .join(" · ");
     }
 
-    const MIN_OUTPUT_PIXELS = 1000;
-    const MAX_OUTPUT_PIXELS = 4096;
-
-    function fitWithinBounds(width: number, height: number): Dimensions {
-        if (width <= 0 || height <= 0) {
-            return outputDimension;
+    useEffect(() => {
+        if (
+            widthText.trim() === "" ||
+            heightText.trim() === "" ||
+            PPI.trim() === ""
+        ) {
+            return;
         }
 
-        const minimumScale = Math.max(
-            MIN_OUTPUT_PIXELS / width,
-            MIN_OUTPUT_PIXELS / height,
-        );
-
-        const maximumScale = Math.min(
-            MAX_OUTPUT_PIXELS / width,
-            MAX_OUTPUT_PIXELS / height,
-        );
-
-        const scale = Math.min(
-            maximumScale,
-            Math.max(minimumScale, 1),
-        );
-
-        return {
-            width: Math.round(width * scale),
-            height: Math.round(height * scale),
-        };
-    }
-
-    function commitWidth() {
         const width = Number(widthText);
-
-        if (widthText.trim() === "" || !Number.isFinite(width) || currentRatio <= 0) {
-            setWidthText(String(outputDimension.width));
-            return;
-        }
-
-        const dimensions = fitWithinBounds(
-            width,
-            width / currentRatio,
-        );
-
-        setWidthText(String(dimensions.width));
-        setHeightText(String(dimensions.height));
-        onOutputDimensionChange(dimensions);
-    }
-
-    function commitHeight() {
         const height = Number(heightText);
+        const parsedPPI = Number(PPI);
 
-        if (heightText.trim() === "" || !Number.isFinite(height) || currentRatio <= 0) {
-            setHeightText(String(outputDimension.height));
+        if (
+            !Number.isFinite(width) || !Number.isFinite(height) || !Number.isFinite(parsedPPI) ||
+            width <= 0 || height <= 0 || parsedPPI <= 0
+        ) {
             return;
         }
 
-        const dimensions = fitWithinBounds(
-            height * currentRatio,
-            height,
-        );
-
-        setWidthText(String(dimensions.width));
-        setHeightText(String(dimensions.height));
-        onOutputDimensionChange(dimensions);
-    }
+        if (paperRatioUnit === "in") {
+            onOutputDimensionChange({
+                width: Math.round(width * parsedPPI),
+                height: Math.round(height * parsedPPI)
+            })
+        } else {
+            onOutputDimensionChange({
+                width: Math.round((width / 2.54) * parsedPPI),
+                height: Math.round((height / 2.54) * parsedPPI)
+            })
+        }
+    }, [
+        widthText,
+        heightText,
+        PPI,
+        paperRatioUnit,
+        onOutputDimensionChange,
+    ]);
 
     return (
         <div className="image-display-window">
@@ -168,15 +165,6 @@ function ImageDisplayWindow({
 
                                 const ratio = naturalWidth / naturalHeight;
                                 setCurrentRatio(ratio);
-
-                                const dimensions = fitWithinBounds(
-                                    naturalWidth,
-                                    naturalHeight,
-                                );
-
-                                setWidthText(String(dimensions.width));
-                                setHeightText(String(dimensions.height));
-                                onOutputDimensionChange(dimensions);
                             }}
                         />
                         <button
@@ -190,38 +178,98 @@ function ImageDisplayWindow({
                             <span>Current Ratio: {currentRatio.toFixed(2)}</span>
                         }
                         <div className="dimension-control">
-                            <span>Output Dimension: </span>
-                            <input
-                                type="number"
-                                value={widthText}
-                                min={MIN_OUTPUT_PIXELS}
-                                max={MAX_OUTPUT_PIXELS}
-                                step={1}
-                                onChange={(event) => setWidthText(event.currentTarget.value)}
-                                onBlur={commitWidth}
-                                onKeyDown={(event) => {
-                                    if (event.key === "Enter") {
-                                        event.preventDefault();
-                                        event.currentTarget.blur();
-                                    }
-                                }}
-                            />
-                            :
-                            <input
-                                type="number"
-                                value={heightText}
-                                min={MIN_OUTPUT_PIXELS}
-                                max={MAX_OUTPUT_PIXELS}
-                                step={1}
-                                onChange={(event) => setHeightText(event.currentTarget.value)}
-                                onBlur={commitHeight}
-                                onKeyDown={(event) => {
-                                    if (event.key === "Enter") {
-                                        event.preventDefault();
-                                        event.currentTarget.blur();
-                                    }
-                                }}
-                            />
+                            <div className="paper-control">
+                                Paper:
+
+                                <select
+                                    value={paperName}
+                                    onChange={(event) => {
+                                        const name = event.currentTarget.value as PaperName
+                                        setPaperName(name)
+                                        if (name !== "Customize") {
+                                            if (paperRatioUnit === "in") {
+                                                setWidthText(PAPER_SIZES_INCHES[name].width)
+                                                setHeightText(PAPER_SIZES_INCHES[name].height)
+                                            } else {
+                                                setWidthText(PAPER_SIZES_CM[name].width)
+                                                setHeightText(PAPER_SIZES_CM[name].height)
+                                            }
+                                        }
+                                    }}
+                                >
+                                    <option value='Customize'>Customize</option>
+                                    <option value='A5'>A5</option>
+                                    <option value='A4'>A4</option>
+                                    <option value='A3'>A3</option>
+                                    <option value='A2'>A2</option>
+                                    <option value='Letter'>Letter</option>
+                                    <option value='Legal'>Legal</option>
+                                    <option value='Tabloid'>Tabloid</option>
+                                </select>
+                            </div>
+
+                            <div className="paper-size-control">
+                                Paper Size:
+                                <input
+                                    className="paper-size-input"
+                                    type="number"
+                                    value={widthText}
+                                    min={0}
+                                    onChange={(event) => {
+                                        setWidthText(event.currentTarget.value)
+                                        setPaperName("Customize")
+                                    }}
+                                />
+                                :
+                                <input
+                                    className="paper-size-input"
+                                    type="number"
+                                    value={heightText}
+                                    min={0}
+                                    onChange={(event) => {
+                                        setHeightText(event.currentTarget.value)
+                                        setPaperName("Customize")
+                                    }}
+                                />
+                            </div>
+
+                            <div className="unit-control">
+                                Unit:
+                                <select
+                                    value={paperRatioUnit}
+                                    onChange={(event) => {
+                                        const unit = event.currentTarget.value as UnitOfLength
+                                        setPaperRatioUnit(unit)
+                                        if (paperName !== "Customize") {
+                                            if (unit === "in") {
+                                                setWidthText(PAPER_SIZES_INCHES[paperName].width)
+                                                setHeightText(PAPER_SIZES_INCHES[paperName].height)
+                                            } else {
+                                                setWidthText(PAPER_SIZES_CM[paperName].width)
+                                                setHeightText(PAPER_SIZES_CM[paperName].height)
+                                            }
+                                        }
+                                    }}
+                                >
+                                    <option value='in'>in</option>
+                                    <option value='cm'>cm</option>
+                                </select>
+                            </div>
+
+                            <div className="ppi-control">
+                                PPI:
+                                <input
+                                    type="number"
+                                    value={PPI}
+                                    min={0}
+                                    onChange={(event) => {
+                                        setPPI(event.currentTarget.value)
+                                    }}
+                                />
+                            </div>
+                            <div className="approximate-pixel-display">
+                                Approximate output pixels: {outputDimension.width} x {outputDimension.height}
+                            </div>
                         </div>
                         <div className="slider-control">
                             <label>Color Count: {colorCount}</label>

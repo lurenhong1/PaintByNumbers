@@ -37,3 +37,7 @@ export type Dimensions = {
     width: number;
     height: number;
 };
+
+export type UnitOfLength = 'in' | 'cm';
+
+export type PaperName = 'A5' | 'A4' | 'A3' | 'A2' | 'Letter' | 'Legal' | 'Tabloid' | 'Customize';
