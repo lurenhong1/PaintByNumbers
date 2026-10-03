@@ -9,50 +9,55 @@ from PIL import Image, ImageOps, UnidentifiedImageError, ImageFilter, ImageDraw,
 import numpy as np
 import cv2
 from app.services.thin_space_remover import remove_short_runs
+from functools import lru_cache
 
 REFERENCE_PIXELS = 1_000_000
 BASE_FILTER_RADIUS = 1
 BASE_MERGE_AREA = 100
 MAX_OUTPUT_PIXELS = 10000
 
-ONE_CHAR_FONT_BY_SIDE = {
-    8: 11,
-    9: 13,
-    10: 15,
-    11: 17,
-    12: 17,
-    13: 19,
-    14: 20,
-    15: 22,
-    16: 24,
-    17: 24,
-    18: 26,
-    19: 27,
-}
+NUMBER_FONT_PATH = "C:/Windows/Fonts/segoeuisl.ttf"
+MIN_FONT_SIZE = 11
+MAX_FONT_SIZE = 48
+MAX_FIT_SIDE = 128
+TEXT_PADDING = 1
 
-TWO_CHAR_FONT_BY_SIDE = {
-    14: 11,
-    15: 12,
-    16: 13,
-    17: 14,
-    18: 16,
-    19: 16,
-    20: 18,
-    21: 18,
-    22: 19,
-    23: 19,
-    24: 21,
-    25: 21,
-    26: 23,
-    27: 23,
-    28: 24,
-    29: 24,
-    30: 26,
-    31: 26,
-    32: 27,
-}
+@lru_cache(maxsize=MAX_FONT_SIZE - MIN_FONT_SIZE + 1)
+def get_number_font(size: int):
+    return ImageFont.truetype(NUMBER_FONT_PATH, size)
 
-MIN_BRUSH_WIDTH_MM = 1.0
+def make_font_table(numbers: range) -> dict[int, int]:
+    required_sides = {}
+
+    for size in range(MIN_FONT_SIZE, MAX_FONT_SIZE + 1):
+        font = get_number_font(size)
+
+        required_sides[size] = max(
+            2 * max(-left, -top, right, bottom)
+            + 2 * TEXT_PADDING
+            for number in numbers
+            for left, top, right, bottom in [
+                font.getbbox(str(number), anchor="mm")
+            ]
+        )
+
+    return {
+        side: max(
+            (
+                size
+                for size, required in required_sides.items()
+                if required <= side
+            ),
+            default=MIN_FONT_SIZE,
+        )
+        for side in range(MAX_FIT_SIDE + 1)
+    }
+
+
+ONE_CHAR_FONT_BY_SIDE = make_font_table(range(1, 10))
+TWO_CHAR_FONT_BY_SIDE = make_font_table(range(10, 51))
+
+MIN_BRUSH_WIDTH_MM = 2.0
 
 def process(
         image_bytes: bytes,
@@ -276,18 +281,23 @@ def find_boundary(image: Image.Image) -> np.ndarray:
 
     return boundaries
 
-def draw_numbers(image: Image.Image, locations: list[tuple[float, float, int]]) -> Image.Image:
-
+def draw_numbers(image: Image.Image, locations: list[tuple[float, float, int, int]]) -> Image.Image:
     numbered_image = image.copy()
 
     draw = ImageDraw.Draw(numbered_image)
 
     for x, y, number, font_size in locations:
-        draw.text((x, y), str(number), fill=(0, 0, 0), font=ImageFont.load_default(font_size), anchor="mm")
+        draw.text(
+            (x, y),
+            str(number),
+            fill=(0, 0, 0),
+            font=get_number_font(font_size),
+            anchor="mm",
+        )
 
     return numbered_image
 
-def locate_numbers(image: Image.Image) -> tuple[list[tuple[int, tuple[int, int, int]]], list[tuple[float, float, int]]]:
+def locate_numbers(image: Image.Image) -> tuple[list[tuple[int, tuple[int, int, int]]], list[tuple[float, float, int, int]]]:
     if image.mode != "P":
         raise ValueError("quantized_image must be a palette image")
 
@@ -338,12 +348,9 @@ def locate_numbers(image: Image.Image) -> tuple[list[tuple[int, tuple[int, int, 
             y = top + padded_y - 1
 
             fit_side = int(math.floor(math.sqrt(2) * max_radius))
-            if color_number < 10:
-                fit_side = max(8, min(fit_side, 19))
-                font_size = ONE_CHAR_FONT_BY_SIDE[fit_side]
-            else:
-                fit_side = max(14, min(fit_side, 32))
-                font_size = TWO_CHAR_FONT_BY_SIDE[fit_side]
+            table = (ONE_CHAR_FONT_BY_SIDE if color_number < 10 else TWO_CHAR_FONT_BY_SIDE)
+
+            font_size = table[max(0, min(fit_side, MAX_FIT_SIDE))]
 
             locations.append((float(x), float(y), color_number, font_size))
 
