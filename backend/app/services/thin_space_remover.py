@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from PIL import Image
 from typing import cast
 
-MAX_ITERATIONS = 10
+MAX_ITERATIONS = 2
 
 @dataclass(slots=True)
 class Run:

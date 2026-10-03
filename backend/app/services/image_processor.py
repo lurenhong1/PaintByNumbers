@@ -57,7 +57,7 @@ def make_font_table(numbers: range) -> dict[int, int]:
 ONE_CHAR_FONT_BY_SIDE = make_font_table(range(1, 10))
 TWO_CHAR_FONT_BY_SIDE = make_font_table(range(10, 51))
 
-MIN_BRUSH_WIDTH_MM = 2.0
+MIN_BRUSH_WIDTH_MM = 1.0
 
 def process(
         image_bytes: bytes,
@@ -75,7 +75,7 @@ def process(
     height, width = boundary.shape
     outlined_array = np.full((height, width, 3), 255, dtype=np.uint8)
 
-    outlined_array[boundary] = (0, 0, 0)
+    outlined_array[boundary] = (220, 220, 220)
 
     outlined_image = Image.fromarray(outlined_array)
 
@@ -290,7 +290,7 @@ def draw_numbers(image: Image.Image, locations: list[tuple[float, float, int, in
         draw.text(
             (x, y),
             str(number),
-            fill=(0, 0, 0),
+            fill=(150, 150, 150),
             font=get_number_font(font_size),
             anchor="mm",
         )
