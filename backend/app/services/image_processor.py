@@ -13,7 +13,7 @@ from app.services.thin_space_remover import remove_short_runs
 REFERENCE_PIXELS = 1_000_000
 BASE_FILTER_RADIUS = 1
 BASE_MERGE_AREA = 100
-MAX_OUTPUT_PIXELS = 4096
+MAX_OUTPUT_PIXELS = 10000
 
 ONE_CHAR_FONT_BY_SIDE = {
     8: 11,
@@ -52,19 +52,17 @@ TWO_CHAR_FONT_BY_SIDE = {
     32: 27,
 }
 
-OUTPUT_PPI = 300
 MIN_BRUSH_WIDTH_MM = 1.0
-
-MIN_RUN_LENGTH = math.ceil(MIN_BRUSH_WIDTH_MM * OUTPUT_PPI / 25.4)
 
 def process(
         image_bytes: bytes,
         color_count: int = 12,
         filter_level: int = 3,
         merge_level: int = 5,
-        output_dimension: tuple[int, int] | None = None
+        output_dimension: tuple[int, int] | None = None,
+        ppi: int = 300
 ) -> tuple[bytes, bytes, list[tuple[int, tuple[int, int, int]]]]:
-    reference_image = reduce_colors(image_bytes, color_count, filter_level, merge_level, output_dimension)
+    reference_image = reduce_colors(image_bytes, color_count, filter_level, merge_level, output_dimension, ppi)
     color_keys, locations = locate_numbers(reference_image)
 
     boundary = find_boundary(reference_image)
@@ -90,7 +88,7 @@ def validate_output_size(output_size: tuple[int, int],) -> None:
 
     if not (1 <= width <= MAX_OUTPUT_PIXELS and 1 <= height <= MAX_OUTPUT_PIXELS):
         raise ValueError(
-            "Output width and height must be between 1 and 4096"
+            "Output width and height must be between 1 and 10000"
         )
 
 def reduce_colors(
@@ -99,6 +97,7 @@ def reduce_colors(
         filter_level: int = 3,
         merge_level: int = 5,
         output_dimension: tuple[int, int] | None = None,
+        ppi: int = 300
 ) -> Image.Image:
     if output_dimension is not None:
         validate_output_size(output_dimension)
@@ -108,6 +107,8 @@ def reduce_colors(
         raise ValueError("filter_level must be between 1 and 5")
     if not 1 <= merge_level <= 10:
         raise ValueError("merge_level must be between 1 and 10")
+    if not ppi > 0:
+        raise ValueError("ppi must be positive")
 
     try:
         with Image.open(BytesIO(image_bytes)) as image:
@@ -156,7 +157,7 @@ def reduce_colors(
                 min_area=effective_merge_area,
             )
 
-            run_cleaned_image = remove_short_runs(region_cleaned_image, MIN_RUN_LENGTH)
+            run_cleaned_image = remove_short_runs(region_cleaned_image, math.ceil(MIN_BRUSH_WIDTH_MM * ppi / 25.4))
 
             return run_cleaned_image
 

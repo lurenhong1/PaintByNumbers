@@ -20,6 +20,7 @@ async def process_image(
         merge_level: Annotated[int, Form(alias="mergeLevel")],
         output_width: Annotated[int, Form(alias="outputWidth")],
         output_height: Annotated[int, Form(alias="outputHeight")],
+        ppi: Annotated[int, Form(alias="ppi")],
 ):
     image_bytes = await image.read()
 
@@ -34,7 +35,8 @@ async def process_image(
                                                               color_count=color_count,
                                                               filter_level=filter_level,
                                                               merge_level=merge_level,
-                                                              output_dimension=(output_width, output_height)
+                                                              output_dimension=(output_width, output_height),
+                                                              ppi=ppi
                                                               )
         return {
             "templateImage": base64.b64encode(template_bytes).decode("ascii"),

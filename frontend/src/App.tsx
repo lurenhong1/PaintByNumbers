@@ -25,6 +25,7 @@ function App() {
   const [colorCount, setColorCount] = useState<number>(20);
   const [filterLevel, setFilterLevel] = useState<number>(3);
   const [mergeLevel, setMergeLevel] = useState<number>(5);
+  const [ppi, setPpi] = useState<number>(300);
 
   const [aspectRatio, setAspectRatio] = useState<number | undefined>();
   const [outputDimension, setOutputDimension] = useState<Dimensions>({ width: 1000, height: 1000});
@@ -58,7 +59,8 @@ function App() {
         colorCount,
         filterLevel,
         mergeLevel,
-        outputDimension
+        outputDimension,
+        ppi
       });
 
       setTemplateImage(`data:image/png;base64,${result.templateImage}`);
@@ -245,12 +247,14 @@ function App() {
               colorCount,
               filterLevel,
               mergeLevel,
-              outputDimension
+              outputDimension,
+              ppi
             }}
             onColorCountChange={setColorCount}
             onFilterLevelChange={setFilterLevel}
             onMergeLevelChange={setMergeLevel}
             onOutputDimensionChange={setOutputDimension}
+            onPpiChange={setPpi}
             onOpenCrop={() => setIsCropModalOpen(true)}
             colorSetsRef={colorSetsRef}
         />

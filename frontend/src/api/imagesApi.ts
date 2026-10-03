@@ -23,6 +23,7 @@ export async function processImage(
     formData.append('mergeLevel', String(settings.mergeLevel));
     formData.append('outputWidth', String(settings.outputDimension.width));
     formData.append('outputHeight', String(settings.outputDimension.height));
+    formData.append('ppi', String(settings.ppi))
 
     const response = await fetch(
         `${API_BASE_URL}/api/images/process`,

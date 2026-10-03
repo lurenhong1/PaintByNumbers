@@ -31,6 +31,7 @@ export type ProcessSettings = {
     filterLevel: number;
     mergeLevel: number;
     outputDimension: Dimensions;
+    ppi: number;
 };
 
 export type Dimensions = {

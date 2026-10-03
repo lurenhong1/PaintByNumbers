@@ -75,11 +75,45 @@
     text-align: left;
 }
 
-.slider-control {
+.parameter-control {
     display: grid;
     grid-template-columns: max-content 1fr;
-    column-gap: 30px;
-    row-gap: 8px;
+    grid-auto-rows: 1fr;
+    align-items: center;
+}
+
+.parameter-control input[type="number"] {
+    width: 6ch;
+    height: 30px;
+    border-radius: 10px;
+    appearance: textfield;
+    -moz-appearance: textfield;
+}
+
+.parameter-control input[type="number"]::-webkit-inner-spin-button,
+.parameter-control input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.parameter-control select{
+    min-width: 100px;
+    padding: 2px 12px;
+
+    box-sizing: border-box;
+    border: 1px solid #aaa;
+    border-radius: 8px;
+
+    text-align: center;
+    text-align-last: center;
+
+    cursor: pointer;
+    color: #111;
+    background-color: white;
+}
+
+.parameter-control option {
+    text-align: left;
 }
 
 .slider {
@@ -161,26 +195,6 @@
     .image { animation: none; }
 }
 
-.dimension-control {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-}
-
-.dimension-control input[type="number"] {
-    width: 6ch;
-    height: 30px;
-    border-radius: 10px;
-    appearance: textfield;
-    -moz-appearance: textfield;
-}
-
-.dimension-control input[type="number"]::-webkit-inner-spin-button,
-.dimension-control input[type="number"]::-webkit-outer-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
-}
-
 .color-sets-export {
     box-sizing: border-box;
     width: 100%;
@@ -188,7 +202,7 @@
     background-color: #dfdfdf;
 }
 
-.empty-state {
+.empty-card {
     min-height: 240px;
     display: grid;
     place-content: center;
@@ -199,7 +213,18 @@
     border-radius: 12px;
 }
 
-.empty-state strong {
+.content-card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: center;
+}
+
+.empty-card strong {
     color: var(--text);
     font-size: 1.1rem;
+}
+
+.content-card > * {
+    gap: 10px;
 }

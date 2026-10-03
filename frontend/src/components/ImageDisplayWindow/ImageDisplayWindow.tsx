@@ -21,6 +21,7 @@ type ImageDisplayWindowProps = {
     onFilterLevelChange: (value: number) => void;
     onMergeLevelChange: (value: number) => void;
     onOutputDimensionChange: (dimension: Dimensions) => void;
+    onPpiChange: (value: number) => void;
     onOpenCrop: () => void;
     colorSetsRef: RefObject<HTMLDivElement | null>;
 };
@@ -36,6 +37,7 @@ function ImageDisplayWindow({
     onFilterLevelChange,
     onMergeLevelChange,
     onOutputDimensionChange,
+    onPpiChange,
     onOpenCrop,
     colorSetsRef
 }: ImageDisplayWindowProps) {
@@ -45,13 +47,14 @@ function ImageDisplayWindow({
     const maxFilterLevel = 5;
     const minMergeLevel = 1;
     const maxMergeLevel = 10;
+    const minPpi = 50;
+    const maxPpi = 400;
 
-    const { colorCount, filterLevel, mergeLevel, outputDimension } = settings;
-    const [currentRatio, setCurrentRatio] = useState<number>(0);
+    const { colorCount, filterLevel, mergeLevel, outputDimension, ppi } = settings;
+    const [currentRatio, setCurrentRatio] = useState<number>(1);
     const [paperName, setPaperName] = useState<PaperName>('Letter')
     const [widthText, setWidthText] = useState("8.5");
     const [heightText, setHeightText] = useState("11");
-    const [PPI, setPPI] = useState<string>("300");
     const [paperRatioUnit, setPaperRatioUnit] = useState<UnitOfLength>('in')
 
     const PAPER_SIZES_INCHES = {
@@ -101,58 +104,54 @@ function ImageDisplayWindow({
     useEffect(() => {
         if (
             widthText.trim() === "" ||
-            heightText.trim() === "" ||
-            PPI.trim() === ""
+            heightText.trim() === ""
         ) {
             return;
         }
 
         const width = Number(widthText);
         const height = Number(heightText);
-        const parsedPPI = Number(PPI);
 
         if (
-            !Number.isFinite(width) || !Number.isFinite(height) || !Number.isFinite(parsedPPI) ||
-            width <= 0 || height <= 0 || parsedPPI <= 0
+            !Number.isFinite(width) || !Number.isFinite(height) ||
+            !Number.isFinite(ppi) || !Number.isFinite(currentRatio) ||
+            width <= 0 || height <= 0 || ppi <= 0 || currentRatio <= 0
         ) {
             return;
         }
 
-        if (paperRatioUnit === "in") {
-            onOutputDimensionChange({
-                width: Math.round(width * parsedPPI),
-                height: Math.round(height * parsedPPI)
-            })
-        } else {
-            onOutputDimensionChange({
-                width: Math.round((width / 2.54) * parsedPPI),
-                height: Math.round((height / 2.54) * parsedPPI)
-            })
+        if (!Number.isFinite(currentRatio) || currentRatio <= 0) {
+            return;
         }
+
+        const divisor = paperRatioUnit === "in" ? 1 : 2.54;
+        const paperWidthPx = Math.floor((width / divisor) * ppi);
+        const paperHeightPx = Math.floor((height / divisor) * ppi);
+
+        onOutputDimensionChange({
+            width: Math.floor(Math.min(paperWidthPx, paperHeightPx * currentRatio)),
+            height: Math.floor(Math.min(paperHeightPx, paperWidthPx / currentRatio))
+        })
     }, [
         widthText,
         heightText,
-        PPI,
+        ppi,
         paperRatioUnit,
         onOutputDimensionChange,
+        currentRatio
     ]);
 
     return (
         <div className="image-display-window">
             <div ref={leftDisplayRef} className="left-image-display">
                 {!croppedImage && (
-                    <div className="empty-state">
+                    <div className="empty-card">
                         <strong>Start with a favorite image</strong>
                         <span>Upload a photo to configure your paint-by-numbers design.</span>
                     </div>
                 )}
                 {croppedImage && (
-                    <div style={{
-                        display: "flex",
-                        flexDirection: 'column',
-                        gap: '10px',
-                        alignItems: 'center'
-                    }}>
+                    <div className="content-card">
                         <img
                             src={croppedImage}
                             alt="Input image preview"
@@ -175,12 +174,15 @@ function ImageDisplayWindow({
                             Crop Image
                         </button>
                         {currentRatio &&
-                            <span>Current Ratio: {currentRatio.toFixed(2)}</span>
+                            <label>Current Ratio: {currentRatio.toFixed(2)}</label>
                         }
-                        <div className="dimension-control">
-                            <div className="paper-control">
-                                Paper:
+                        <label>
+                            Approximate output pixels: {outputDimension.width} x {outputDimension.height}
+                        </label>
 
+                        <div className="parameter-control">
+                            <label>Paper:</label>
+                            <div>
                                 <select
                                     value={paperName}
                                     onChange={(event) => {
@@ -208,13 +210,13 @@ function ImageDisplayWindow({
                                 </select>
                             </div>
 
-                            <div className="paper-size-control">
-                                Paper Size:
+                            <label>Paper Size:</label>
+                            <div style={{display: "flex", gap: "10px", alignItems: "center", justifyContent: "center"}}>
                                 <input
-                                    className="paper-size-input"
                                     type="number"
                                     value={widthText}
                                     min={0}
+                                    disabled={isProcessing}
                                     onChange={(event) => {
                                         setWidthText(event.currentTarget.value)
                                         setPaperName("Customize")
@@ -222,10 +224,10 @@ function ImageDisplayWindow({
                                 />
                                 :
                                 <input
-                                    className="paper-size-input"
                                     type="number"
                                     value={heightText}
                                     min={0}
+                                    disabled={isProcessing}
                                     onChange={(event) => {
                                         setHeightText(event.currentTarget.value)
                                         setPaperName("Customize")
@@ -233,10 +235,11 @@ function ImageDisplayWindow({
                                 />
                             </div>
 
-                            <div className="unit-control">
-                                Unit:
+                            <label>Unit:</label>
+                            <div>
                                 <select
                                     value={paperRatioUnit}
+                                    disabled={isProcessing}
                                     onChange={(event) => {
                                         const unit = event.currentTarget.value as UnitOfLength
                                         setPaperRatioUnit(unit)
@@ -256,22 +259,22 @@ function ImageDisplayWindow({
                                 </select>
                             </div>
 
-                            <div className="ppi-control">
-                                PPI:
+                            <label>PPI: {ppi}</label>
+                            <div className="slider">
+                                <span>{minPpi}</span>
                                 <input
-                                    type="number"
-                                    value={PPI}
-                                    min={0}
-                                    onChange={(event) => {
-                                        setPPI(event.currentTarget.value)
-                                    }}
+                                    type="range"
+                                    min={minPpi}
+                                    max={maxPpi}
+                                    step={50}
+                                    value={ppi}
+                                    disabled={isProcessing}
+                                    title="Pixels per inch."
+                                    onChange={(e) => onPpiChange(e.currentTarget.valueAsNumber)}
                                 />
+                                <span>{maxPpi}</span>
                             </div>
-                            <div className="approximate-pixel-display">
-                                Approximate output pixels: {outputDimension.width} x {outputDimension.height}
-                            </div>
-                        </div>
-                        <div className="slider-control">
+
                             <label>Color Count: {colorCount}</label>
                             <div className="slider">
                                 <span>{minColorCount}</span>
@@ -320,12 +323,13 @@ function ImageDisplayWindow({
                                 <span>{maxMergeLevel}</span>
                             </div>
                         </div>
+
                     </div>
                 )}
             </div>
             <div ref={rightDisplayRef} className="right-image-display">
                 {!referenceImage && !templateImage && (
-                    <div className="empty-state">
+                    <div className="empty-card">
                         <strong>Your artwork will appear here</strong>
                         <span>Adjust the settings, then select Generate.</span>
                     </div>
