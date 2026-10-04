@@ -8,7 +8,7 @@ from io import BytesIO
 from PIL import Image, ImageOps, UnidentifiedImageError, ImageFilter, ImageDraw, ImageFont
 import numpy as np
 import cv2
-from app.services.thin_space_remover import remove_short_runs
+from app.services.thin_space_remover import perform_merge_operation
 from functools import lru_cache
 
 REFERENCE_PIXELS = 1_000_000
@@ -162,7 +162,7 @@ def reduce_colors(
                 min_area=effective_merge_area,
             )
 
-            run_cleaned_image = remove_short_runs(region_cleaned_image, math.ceil(MIN_BRUSH_WIDTH_MM * ppi / 25.4))
+            run_cleaned_image = perform_merge_operation(region_cleaned_image, math.ceil(MIN_BRUSH_WIDTH_MM * ppi / 25.4))
 
             return run_cleaned_image
 

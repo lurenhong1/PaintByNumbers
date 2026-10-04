@@ -2,8 +2,13 @@ from dataclasses import dataclass
 
 from PIL import Image
 from typing import cast
+import numpy as np
+import cv2
 
-MAX_ITERATIONS = 2
+MAX_VH_ITERATIONS = 4
+MAX_C_ITERATIONS = 4
+TOLERANCE = 0.3
+MIN_COVERAGE_IMPROVEMENT = 0.10
 
 @dataclass(slots=True)
 class Run:
@@ -185,7 +190,7 @@ def process_line(colors: list[int], min_length: int, palette_colors: list[tuple[
     return runs, changed
 
 
-def remove_short_runs(image: Image.Image, min_length: int) -> Image.Image:
+def remove_short_runs(image: Image.Image, min_length: int, max_iter: int = MAX_VH_ITERATIONS) -> Image.Image:
     """
     Merge horizontal and vertical runs shorter than min_length.
     The input image is not modified. Processing stops when no changes or after
@@ -216,7 +221,7 @@ def remove_short_runs(image: Image.Image, min_length: int) -> Image.Image:
     pixels = result.load()
     width, height = result.size
 
-    for _ in range(MAX_ITERATIONS):
+    for _ in range(max_iter):
         changed = False
 
         # Row scan
@@ -249,3 +254,255 @@ def remove_short_runs(image: Image.Image, min_length: int) -> Image.Image:
             break
 
     return result
+
+def create_brush_kernel(brush_diameter_px: int) -> np.ndarray:
+    if brush_diameter_px < 1:
+        raise ValueError("brush_diameter_px must be at least 1")
+
+    radius = brush_diameter_px / 2.0
+    extent = int(np.ceil(radius))
+
+    y, x = np.ogrid[
+        -extent:extent + 1,
+        -extent:extent + 1,
+    ]
+
+    return (x * x + y * y <= radius * radius).astype(np.uint8)
+
+def find_valid_brush_centers(region_mask: np.ndarray,kernel: np.ndarray) -> np.ndarray:
+    mask = (region_mask != 0).astype(np.uint8)
+
+    centers = cv2.erode(
+        mask,
+        kernel,
+        iterations=1,
+        borderType=cv2.BORDER_CONSTANT,
+        borderValue=0,
+    )
+
+    return centers.astype(bool)
+
+def create_paintable_mask(region_mask: np.ndarray, kernel: np.ndarray) -> np.ndarray:
+    centers = find_valid_brush_centers(region_mask, kernel)
+
+    covered = cv2.dilate(
+        centers.astype(np.uint8),
+        kernel,
+        iterations=1,
+        borderType=cv2.BORDER_CONSTANT,
+        borderValue=0,
+    )
+
+    return covered.astype(bool) & (region_mask != 0)
+
+def find_unpaintable_pixels(region_mask: np.ndarray, kernel: np.ndarray) -> np.ndarray:
+    original = region_mask != 0
+    paintable = create_paintable_mask(original, kernel)
+
+    return original & ~paintable
+
+def find_all_unpaintable_pixels(labels: np.ndarray, kernel: np.ndarray) -> np.ndarray:
+    uncovered = np.zeros(labels.shape, dtype=bool)
+
+    for color_label in np.unique(labels):
+        region_mask = labels == color_label
+
+        uncovered |= find_unpaintable_pixels(
+            region_mask,
+            kernel,
+        )
+
+    return uncovered
+
+def find_unpaintable_patches(labels: np.ndarray, uncovered: np.ndarray, color_label: int) -> tuple[int, np.ndarray]:
+    patch_mask = uncovered & (labels == color_label)
+
+    count, patch_ids = cv2.connectedComponents(
+        patch_mask.astype(np.uint8),
+        connectivity=4,
+    )
+
+    return count, patch_ids
+
+def merge_unpaintable_patch(
+        labels: np.ndarray,
+        result: np.ndarray,
+        uncovered: np.ndarray,
+        patch_mask: np.ndarray,
+        color_label: int,
+        palette_colors: list[tuple[int, int, int]]
+) -> int:
+    # Count shared edges between each pixel and the patch.
+    contacts = np.zeros(labels.shape, dtype=np.uint8)
+    contacts[1:, :] += patch_mask[:-1, :]
+    contacts[:-1, :] += patch_mask[1:, :]
+    contacts[:, 1:] += patch_mask[:, :-1]
+    contacts[:, :-1] += patch_mask[:, 1:]
+
+    boundary = (
+            (contacts > 0)
+            & ~patch_mask
+            & (labels != color_label)
+    )
+
+    candidates = []
+
+    for neighbor_color in np.unique(labels[boundary]):
+        target_color = int(neighbor_color)
+
+        _, region_ids = cv2.connectedComponents(
+            (labels == target_color).astype(np.uint8),
+            connectivity=4,
+        )
+
+        touching_ids = np.unique(
+            region_ids[boundary & (labels == target_color)]
+        )
+
+        for region_id in touching_ids:
+            region_mask = region_ids == region_id
+
+            has_paintable = bool(
+                np.any(region_mask & ~uncovered)
+            )
+            shared_edges = int(contacts[region_mask].sum())
+            distance = color_distance_squared(
+                color_label,
+                target_color,
+                palette_colors,
+            )
+
+            candidates.append((
+                not has_paintable,
+                distance,
+                -shared_edges,
+                target_color,
+            ))
+
+    if not candidates:
+        return 0
+
+    target_color = min(candidates)[3]
+
+    changed = int(
+        np.count_nonzero(result[patch_mask] != target_color)
+    )
+    result[patch_mask] = target_color
+
+    return changed
+
+def circular_merge_pass(labels: np.ndarray, kernel: np.ndarray, palette_colors: list[tuple[int, int, int]]) -> tuple[np.ndarray, int, int]:
+    uncovered = find_all_unpaintable_pixels(labels, kernel)
+
+    result = labels.copy()
+    changed = 0
+
+    for label in np.unique(labels[uncovered]):
+        color_label = int(label)
+
+        count, patch_ids = find_unpaintable_patches(
+            labels,
+            uncovered,
+            color_label,
+        )
+
+        for patch_id in range(1, count):
+            patch_mask = patch_ids == patch_id
+
+            changed += merge_unpaintable_patch(
+                labels,
+                result,
+                uncovered,
+                patch_mask,
+                color_label,
+                palette_colors,
+            )
+
+    remaining_mask = find_all_unpaintable_pixels(result, kernel)
+    remaining = int(np.count_nonzero(remaining_mask))
+
+    return result, changed, remaining
+
+
+def perform_merge_operation(image: Image.Image, min_length: int, max_iter: int = MAX_C_ITERATIONS):
+    if image.mode != "P":
+        raise ValueError("image must be a palette image")
+
+    if min_length < 1:
+        raise ValueError("min_length must be at least 1")
+
+    palette = image.getpalette()
+
+    if palette is None:
+        raise ValueError("image does not contain a color palette")
+
+    palette_colors = [(palette[index], palette[index + 1], palette[index + 2])
+                      for index in range(0, len(palette), 3)]
+
+    kernel = create_brush_kernel(min_length)
+    labels = np.array(image, dtype=np.uint8)
+
+    result = labels.copy()
+    previous_changed = None
+    previous_remaining = None
+    fallback_requested = False
+    fallback_used = False
+    for i in range(max_iter):
+        if not fallback_requested:
+            result, changed, remaining = circular_merge_pass(result, kernel, palette_colors)
+            if remaining == 0:
+                break
+
+            if changed == 0:
+                if fallback_used:
+                    break
+
+                fallback_requested = True
+                continue
+            if previous_changed is not None and previous_changed > 0:
+                activity_ratio = changed / previous_changed
+
+                if activity_ratio <= TOLERANCE:
+                    break
+            if previous_remaining is not None and previous_remaining > 0:
+                coverage_improvement = (previous_remaining - remaining) / previous_remaining
+
+                if coverage_improvement < MIN_COVERAGE_IMPROVEMENT:
+                    if fallback_used:
+                        break
+
+                    fallback_requested = True
+                    continue
+
+            previous_changed = changed
+            previous_remaining = remaining
+        else:
+            editable_mask = find_all_unpaintable_pixels(result, kernel)
+
+            fallback_image = Image.fromarray(result, mode="P")
+            fallback_image.putpalette(palette)
+
+            fallback_image = remove_short_runs(fallback_image, min_length, max_iter=1)
+
+            fallback_labels = np.array(fallback_image, dtype=np.uint8)
+
+            result[editable_mask] = fallback_labels[editable_mask]
+
+            fallback_used = True
+            fallback_requested = False
+            previous_changed = None
+            previous_remaining = None
+
+            remaining_mask = find_all_unpaintable_pixels(result, kernel)
+            remaining = int(np.count_nonzero(remaining_mask))
+
+            if remaining == 0:
+                break
+
+    result_image = Image.fromarray(result, mode="P")
+    result_image.putpalette(palette)
+    return result_image
+
+
+
+
