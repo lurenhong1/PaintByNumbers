@@ -4,6 +4,32 @@ Turn your photos into personalized paint-by-numbers templates.
 
 Paint by Numbers is a full-stack web application that simplifies an uploaded image into a limited color palette, outlines its regions, and labels them with matching color numbers. Download the template, color reference, and palette to use as a painting guide.
 
+## Application Preview
+
+![Paint by Numbers interface empty](docs/images/app-preview-empty.png)
+
+![Paint by Numbers interface modal](docs/images/app-preview-modal.png)
+
+![Paint by Numbers interface result](docs/images/app-preview-result.png)
+
+Upload an image, adjust processing settings, and preview your painting guides.
+
+## Example Results
+
+### Input Image
+
+![Original input image](docs/images/input.jpg)
+
+### Generated Painting Guides
+
+| Color Reference | Numbered Template |
+|---|---|
+| ![Color reference](docs/images/reference.png) | ![Numbered template](docs/images/template.png) |
+
+### Color Key
+
+![Numbered color palette](docs/images/color-sets.png)
+
 ## Features
 
 - **Upload and crop images** — Supports PNG, JPEG, and WebP, with freeform and preset crop ratios.
