@@ -8,8 +8,7 @@ from io import BytesIO
 from PIL import Image, ImageOps, UnidentifiedImageError, ImageFilter, ImageDraw, ImageFont
 import numpy as np
 import cv2
-from app.services.thin_space_remover import perform_merge_operation, \
-    remove_short_runs
+from app.services.thin_space_remover import perform_merge_operation
 from functools import lru_cache
 
 REFERENCE_PIXELS = 1_000_000
@@ -58,7 +57,7 @@ def make_font_table(numbers: range) -> dict[int, int]:
 ONE_CHAR_FONT_BY_SIDE = make_font_table(range(1, 10))
 TWO_CHAR_FONT_BY_SIDE = make_font_table(range(10, 51))
 
-MIN_BRUSH_WIDTH_MM = 1.0
+MIN_BRUSH_WIDTH_MM = 1.5
 
 def process(
         image_bytes: bytes,
@@ -163,9 +162,12 @@ def reduce_colors(
                 min_area=effective_merge_area,
             )
 
-            # run_cleaned_image = perform_merge_operation(region_cleaned_image, math.ceil(MIN_BRUSH_WIDTH_MM * ppi / 25.4))
-            # run_cleaned_image = remove_short_runs(region_cleaned_image, math.ceil(MIN_BRUSH_WIDTH_MM * ppi / 25.4), max_iter=1)
+            run_cleaned_image = perform_merge_operation(region_cleaned_image, math.ceil(MIN_BRUSH_WIDTH_MM * ppi / 25.4))
 
+            region_cleaned_image = merge_small_regions(
+                run_cleaned_image,
+                min_area=effective_merge_area//4,
+            )
             return region_cleaned_image
 
     except (UnidentifiedImageError, OSError) as error:
